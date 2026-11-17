@@ -29,3 +29,24 @@ Alternative: **File > Build Profiles > Build** into a `Builds` folder, run the a
 - [ ] Leave button returns to the menu; the other player keeps playing and sees Players: 1.
 - [ ] Rejoin with Quick Play lands back in the same room.
 - [ ] Console: no red errors during the whole test. Yellow warnings about PhotonView ID or missing EventSystem would be a problem; tell me.
+
+## Phase 2: lobby
+
+Setup: GitHub Desktop Fetch and Pull, open Unity, wait for compile, then **Tools > Arena > 4. Build Main Menu Scene**
+(only step 4; the Game scene is unchanged). Commit and push the new MainMenu scene afterwards.
+
+Run two players (Multiplayer Play Mode, Player 2 ticked) and check:
+
+- [ ] Connect panel: empty nickname gets a random "PlayerNNN" name; a typed name is remembered next time.
+- [ ] Status line shows "Connected, region: ..." then "In lobby as <name>".
+- [ ] Player 1: Create Room with a name and Max players 2. Player 2's list shows it within a second as "name (1 / 2)".
+- [ ] Player 2 clicks the room: both see the Room panel with both names, host marked "(host)", themselves "(you)".
+- [ ] Player 1 (host) has Start Game enabled; Player 2 has it greyed with "Waiting for the host...".
+- [ ] Player 2 clicks Leave Room: Player 1's Start greys out with "Waiting for another player (1 / 2)".
+- [ ] Player 2 rejoins. Player 1 clicks Start Game: both load the arena.
+- [ ] While they play, a third client (or Player 2 after leaving) does NOT see the room in the list (closed and hidden).
+- [ ] In the arena, Leave returns to the menu, and the lobby panel appears automatically with the room list.
+- [ ] Create a room with the same name as an existing one: status says Photon's error, nothing crashes.
+- [ ] Join a room that just became full: "Could not join room: ..." appears.
+- [ ] Quit button stops Play mode (closes the app in a build).
+- [ ] Console has no red errors.

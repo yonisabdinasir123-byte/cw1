@@ -31,22 +31,50 @@ constant will not compile.
 ### GameTags (Assets/Scripts/Game/GameTags.cs)
 Purpose: the tag and layer names, for the same reason.
 
-### NetworkLauncher (Assets/Scripts/Network/NetworkLauncher.cs)
-Purpose: menu-side connection. Connects to Photon, takes a nickname, joins or creates a room.
+### LobbyManager (Assets/Scripts/Network/LobbyManager.cs)
+Purpose: every lobby network action and every Photon callback the menu cares about. It drives
+`LobbyUI` but never touches widgets itself.
 Key methods:
-- `Start`: sets `PhotonNetwork.AutomaticallySyncScene = true` and calls
-  `PhotonNetwork.ConnectUsingSettings()` (reads App ID and region from PhotonServerSettings).
-- `OnConnectedToMaster`: Photon callback; now we may create or join rooms, so the Play button is enabled.
-- `OnPlayClicked`: stores `PhotonNetwork.NickName` and calls `JoinRandomOrCreateRoom`.
-- `OnJoinedRoom`: sets our kills and deaths properties to 0, and if we are master, loads the Game scene.
-- `OnJoinRandomFailed`, `OnCreateRoomFailed`, `OnDisconnected`: show the error on screen and re-enable the button.
-Network: scene loading uses `PhotonNetwork.LoadLevel`, which with `AutomaticallySyncScene`
-stores the scene name in a room property so joining clients load the same scene.
+- `Start`: sets `AutomaticallySyncScene`, raises `SendRate` / `SerializationRate` to 30 / 15 for
+  smoother remote movement, and if we came back from a match, rejoins the lobby.
+- `Connect(nickname)`: stores `PhotonNetwork.NickName`, then `ConnectUsingSettings()`.
+- `OnConnectedToMaster`: calls `PhotonNetwork.JoinLobby()`. Without a lobby there is no room list.
+- `OnRoomListUpdate(List<RoomInfo>)`: Photon sends **deltas**, not the whole list. Rooms that were
+  removed arrive with `RemovedFromList = true`. We keep a `Dictionary<string, RoomInfo>` keyed by
+  room name, apply each delta, drop rooms that are closed, hidden or empty, and redraw from the dictionary.
+- `CreateRoom(name, maxPlayers)`: `PhotonNetwork.CreateRoom` with `RoomOptions` (max players, visible, open).
+- `JoinRoom(name)`, `QuickPlay()`, `LeaveRoom()`: thin wrappers with on-screen status.
+- `StartGame()`: master only and only with 2+ players. Sets `IsOpen = false` and `IsVisible = false`
+  so nobody joins mid-match, then `PhotonNetwork.LoadLevel("Game")`.
+- `OnJoinedRoom`: sets our kills and deaths to 0 and shows the Room panel.
+- `OnPlayerEnteredRoom`, `OnPlayerLeftRoom`, `OnMasterClientSwitched`: redraw the player list and
+  re-evaluate whether Start is clickable.
+- `OnCreateRoomFailed`, `OnJoinRoomFailed`, `OnJoinRandomFailed`, `OnDisconnected`: human-readable
+  status text instead of a silent log.
+- `Quit()`: disconnects, then `Application.Quit()` (stops Play mode in the Editor).
 Questions:
-- *Why does only the master client call LoadLevel?* If every client loaded the level they would
-  fight over the room's scene property. The master sets it once and the others follow.
-- *What happens if two players press Play at the same time?* The first creates a room, the second
-  joins it, because `JoinRandomOrCreateRoom` asks the server for any open room before creating.
+- *Why a dictionary for the room list?* Because the callback is incremental. If we rebuilt the UI
+  from each callback's list alone, we would lose rooms that did not change. The dictionary is the
+  full picture; the callback only patches it.
+- *Why close the room when the game starts?* A player joining mid-round would miss the round
+  start, have no spawn and break the "full game for all players" criterion. Closing also removes the
+  room from everyone else's list.
+- *Why can only the master client start?* One client must be the referee for scene loading and,
+  later, the timer. Photon already elects a master, so we reuse it.
+- *What does the player see if a room name is taken?* `OnCreateRoomFailed` fires with Photon's
+  message and the status line shows it. The lobby panel stays open so they can retry.
+
+### LobbyUI (Assets/Scripts/UI/LobbyUI.cs)
+Purpose: the three panels (Connect, Lobby, Room) and their widgets. Buttons call `LobbyManager`.
+Key methods: `ShowConnectPanel`, `ShowLobbyPanel`, `ShowRoomPanel`, `SetStatus`,
+`RefreshRoomList(rooms)` (one button per room, cloned from an inactive template),
+`RefreshPlayerList()` (names with "(host)" and "(you)", Start button interactable only for the
+master with 2+ players, hint text otherwise). The nickname is remembered with `PlayerPrefs`.
+Questions:
+- *Why clone a template instead of a prefab?* Fewer references to wire by hand and the template
+  lives in the same scene, so it cannot go missing.
+- *Why is the Start button sometimes greyed out?* Either you are not the host or fewer than two
+  players are in the room. The hint text under it says which.
 
 ### GameManager (Assets/Scripts/Game/GameManager.cs)
 Purpose: per-client coordinator in the Game scene: spawns the local player, respawns it after a
@@ -173,11 +201,14 @@ sequenceDiagram
     participant A as Client A (master)
     participant P as Photon Cloud
     participant B as Client B
-    A->>P: ConnectUsingSettings
-    B->>P: ConnectUsingSettings
-    A->>P: JoinRandomOrCreateRoom (creates room)
+    A->>P: ConnectUsingSettings, JoinLobby
+    B->>P: ConnectUsingSettings, JoinLobby
+    A->>P: CreateRoom("A's room", max 4)
+    P-->>B: OnRoomListUpdate (delta) -> dictionary -> list button
+    B->>P: JoinRoom("A's room")
+    P-->>A: OnPlayerEnteredRoom -> Start button enabled (2 players, A is master)
+    A->>P: Room IsOpen = false, IsVisible = false
     A->>P: LoadLevel("Game") sets room scene property
-    B->>P: JoinRandomOrCreateRoom (joins A's room)
     P-->>B: Room scene = Game, auto load
     A->>P: Instantiate Player (owner A)
     B->>P: Instantiate Player (owner B)

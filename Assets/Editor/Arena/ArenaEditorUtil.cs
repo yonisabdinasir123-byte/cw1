@@ -217,6 +217,36 @@ public static class ArenaEditorUtil
         return button;
     }
 
+    /// <summary>Creates a vertical scroll list and returns its content transform (add children to it).</summary>
+    public static RectTransform CreateScrollList(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)
+    {
+        Image background = CreateImage(parent, name, new Color(0f, 0f, 0f, 0.35f), anchorMin, anchorMax, offsetMin, offsetMax);
+        ScrollRect scroll = background.gameObject.AddComponent<ScrollRect>();
+
+        Image viewport = CreateImage(background.transform, "Viewport", new Color(1f, 1f, 1f, 0.01f), Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f));
+        Mask mask = viewport.gameObject.AddComponent<Mask>();
+        mask.showMaskGraphic = false;
+
+        RectTransform content = CreateRect(viewport.transform, "Content", new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+        content.pivot = new Vector2(0.5f, 1f);
+        VerticalLayoutGroup layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+        layout.childForceExpandHeight = false;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.spacing = 6f;
+        layout.padding = new RectOffset(6, 6, 6, 6);
+        ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        scroll.content = content;
+        scroll.viewport = viewport.rectTransform;
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 30f;
+        return content;
+    }
+
     public static InputField CreateInputField(Transform parent, string name, string placeholder, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)
     {
         Image background = CreateImage(parent, name, new Color(0.95f, 0.95f, 0.95f), anchorMin, anchorMax, offsetMin, offsetMax);
