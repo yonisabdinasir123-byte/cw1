@@ -49,16 +49,21 @@ public static class ArenaMenuSceneBuilder
         status.color = new Color(0.8f, 0.85f, 0.95f);
         ArenaEditorUtil.SetReference(ui, "statusText", status);
 
-        BuildConnectPanel(root, ui);
-        BuildLobbyPanel(root, ui);
-        BuildRoomPanel(root, ui);
+        GameObject connectPanel = BuildConnectPanel(root, ui);
+        GameObject lobbyPanel = BuildLobbyPanel(root, ui);
+        GameObject roomPanel = BuildRoomPanel(root, ui);
+
+        // Only the Connect panel is visible until LobbyUI switches panels at runtime.
+        connectPanel.SetActive(true);
+        lobbyPanel.SetActive(false);
+        roomPanel.SetActive(false);
 
         string path = ArenaEditorUtil.ScenesFolder + "/" + NetworkKeys.MainMenuScene + ".unity";
         EditorSceneManager.SaveScene(scene, path);
         Debug.Log("Arena: MainMenu scene saved to " + path);
     }
 
-    private static void BuildConnectPanel(Transform root, LobbyUI ui)
+    private static GameObject BuildConnectPanel(Transform root, LobbyUI ui)
     {
         Image panel = ArenaEditorUtil.CreateImage(root, "ConnectPanel", PanelColor,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-320f, -160f), new Vector2(320f, 160f));
@@ -74,9 +79,10 @@ public static class ArenaMenuSceneBuilder
         ArenaEditorUtil.SetReference(ui, "connectPanel", panel.gameObject);
         ArenaEditorUtil.SetReference(ui, "nicknameInput", nickname);
         ArenaEditorUtil.SetReference(ui, "connectButton", connect);
+        return panel.gameObject;
     }
 
-    private static void BuildLobbyPanel(Transform root, LobbyUI ui)
+    private static GameObject BuildLobbyPanel(Transform root, LobbyUI ui)
     {
         Image panel = ArenaEditorUtil.CreateImage(root, "LobbyPanel", PanelColor,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-700f, -330f), new Vector2(700f, 330f));
@@ -129,9 +135,10 @@ public static class ArenaMenuSceneBuilder
         ArenaEditorUtil.SetReference(ui, "roomEntryTemplate", template);
         ArenaEditorUtil.SetReference(ui, "roomListEmptyText", emptyText);
         ArenaEditorUtil.SetReference(ui, "quitButton", quit);
+        return panel.gameObject;
     }
 
-    private static void BuildRoomPanel(Transform root, LobbyUI ui)
+    private static GameObject BuildRoomPanel(Transform root, LobbyUI ui)
     {
         Image panel = ArenaEditorUtil.CreateImage(root, "RoomPanel", PanelColor,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-450f, -300f), new Vector2(450f, 300f));
@@ -161,5 +168,6 @@ public static class ArenaMenuSceneBuilder
         ArenaEditorUtil.SetReference(ui, "startButton", start);
         ArenaEditorUtil.SetReference(ui, "startHintText", hint);
         ArenaEditorUtil.SetReference(ui, "leaveRoomButton", leave);
+        return panel.gameObject;
     }
 }
