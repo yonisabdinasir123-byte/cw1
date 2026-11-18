@@ -50,3 +50,19 @@ Run two players (Multiplayer Play Mode, Player 2 ticked) and check:
 - [ ] Join a room that just became full: "Could not join room: ..." appears.
 - [ ] Quit button stops Play mode (closes the app in a build).
 - [ ] Console has no red errors.
+
+## Phase 3: timer, winner and end screen
+
+Setup: Fetch and Pull, open Unity, wait for compile, then **Tools > Arena > 3. Build Game Scene**.
+For a quick test, select the GameManager object in the Game scene and set Round Manager > Round Duration Seconds to 30, then save the scene (Cmd+S). Commit and push.
+
+- [ ] Both windows show the same m:ss timer at the top, within a second of each other.
+- [ ] Timer turns red in the last 10 seconds.
+- [ ] Get one kill, then wait for 0:00. Both windows show the end screen at the same moment.
+- [ ] The killer's window: "<name> wins!" and "You Won!" in green. The other: same winner name and "You Lost" in red.
+- [ ] Final scoreboard on both screens matches the live scoreboard.
+- [ ] After the end, WASD and Space do nothing, and a dead player does not respawn.
+- [ ] Draw test: let the timer run out with no kills. Both see "Draw: A and B" and "Draw!".
+- [ ] Master-switch test: start a round, then have the host (Player 1) click Leave mid-round. Player 2's timer keeps counting without a jump, and when it reaches 0 Player 2 sees the end screen (Player 2 is now master).
+- [ ] Leave on the end screen returns to the lobby.
+- [ ] Console has no red errors.

@@ -13,6 +13,26 @@ public static class NetworkKeys
     /// <summary>Number of times this player has died in the current round. Written only by the master client.</summary>
     public const string Deaths = "d";
 
+    // ---- Room custom properties (written only by the master client) ----
+
+    /// <summary>PhotonNetwork.Time (server clock) at which the current round started. Double.</summary>
+    public const string RoundStartTime = "rs";
+
+    /// <summary>Length of the round in seconds. Float.</summary>
+    public const string RoundDuration = "rd";
+
+    /// <summary>Current round state: RoundPlaying or RoundEnded. Int.</summary>
+    public const string RoundState = "st";
+
+    /// <summary>Actor numbers of the winner(s). One entry = winner, several = draw. Int array.</summary>
+    public const string Winners = "w";
+
+    /// <summary>Display text for the winner(s), e.g. "Alice" or "Alice and Bob". String.</summary>
+    public const string WinnerNames = "wn";
+
+    public const int RoundPlaying = 1;
+    public const int RoundEnded = 2;
+
     // ---- Prefabs. PhotonNetwork.Instantiate loads these by name from a Resources folder. ----
 
     public const string PlayerPrefab = "Player";

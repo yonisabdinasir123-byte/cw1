@@ -165,6 +165,42 @@ Questions:
 - *What if the master leaves?* Photon picks a new master and `OnMasterClientSwitched` fires on
   every client. The new one rebuilds from properties, which the server kept.
 
+### RoundManager (Assets/Scripts/Game/RoundManager.cs)
+Purpose: the synchronised round timer and the winner decision. Master writes, everyone reads.
+Key methods:
+- `StartRound` (master only): writes room properties `rs` = `PhotonNetwork.Time`, `rd` = duration,
+  `st` = Playing, and clears the winner keys. `PhotonNetwork.Time` is Photon's server clock, which
+  every client keeps in sync, so one start time is enough for everybody.
+- `Update`: every client computes `remaining = duration - (PhotonNetwork.Time - startTime)`. Nothing
+  is sent per frame. The master, and only the master, calls `EndRound` when it reaches zero, guarded
+  by `endRequested` so it fires once.
+- `EndRound` (master only): sorts players by kills descending, then deaths ascending. Every player
+  with the same kills and deaths as the top player is a winner. One winner = win, several = draw.
+  Publishes `st` = Ended, `w` = winner actor numbers (int array) and `wn` = display names.
+- `OnRoomPropertiesUpdate`: when `st` changes, each client calls `HandleRoundStarted` or
+  `HandleRoundEnded`. The end handler freezes local input, blocks respawning and raises `RoundEnded`
+  with a `RoundResult` (names, draw flag, did I win).
+Network: room custom properties, not RPC, on purpose. Properties are stored by the server, so a
+client that is slow to load, or a new master after the old one quits, can always read the current
+truth. An RPC is a one-off message; if you missed it, it is gone.
+Questions:
+- *How do all timers agree without sending the time?* They all subtract the same stored start
+  time from the same server clock. Only the start time crosses the network, once.
+- *What happens to the timer if the master client leaves?* Nothing. The start time lives in the
+  room, not on the master. The new master simply becomes the one allowed to end the round.
+- *How are draws handled?* Tie-break rule: most kills, then fewest deaths. Players still level
+  after that are all winners, the screen says "Draw: A and B", and each of them sees "Draw!" while
+  everyone else sees "You Lost".
+- *What stops a kill in the final frame from changing the result?* `KillTracker.RpcReportKill`
+  and `PlayerHealth.TakeDamage` both return early once `IsRoundActive` is false, and the master
+  reads the scores at the moment it ends the round.
+
+### EndScreenUI and RoundTimerUI
+`RoundTimerUI` formats `RoundManager.RemainingSeconds` as m:ss and turns red under ten seconds.
+`EndScreenUI` subscribes to `RoundEnded`, writes the winner's name in large text, the personal
+line ("You Won!", "You Lost" or "Draw!"), the final scoreboard via `ScoreboardUI.BuildScoreboardText`,
+and shows the Leave button. `RoundStarted` hides it again, which Play Again will use.
+
 ### ScoreboardUI, HudUI, CameraFollow, PlayerNameTag
 UI reads, never writes. `ScoreboardUI` redraws on `OnPlayerPropertiesUpdate`, join and leave.
 `HudUI` hooks the local `PlayerHealth` each time one spawns via the static `LocalPlayerSpawned`
@@ -178,7 +214,7 @@ the camera. `PlayerNameTag` displays `photonView.Owner.NickName`.
 | Method | Defined in | Sender | Target | Parameters | Purpose |
 |---|---|---|---|---|---|
 | `TakeDamage` | PlayerHealth | Projectile owner | Victim's owner only | damage, attacker actor number | Apply damage once |
-| `RpcReportKill` | KillTracker | Victim's client | MasterClient | killer actor, victim actor | Increment scores |
+| `RpcReportKill` | KillTracker | Victim's client | MasterClient | killer actor, victim actor | Increment scores (ignored after the round ends) |
 
 ### Custom properties
 
@@ -186,6 +222,11 @@ the camera. `PlayerNameTag` displays `photonView.Owner.NickName`.
 |---|---|---|---|---|
 | `k` (Kills) | Player | Master client (0 on join by the player) | ScoreboardUI, future RoundManager | Kills this round |
 | `d` (Deaths) | Player | Master client (0 on join by the player) | ScoreboardUI | Deaths this round |
+| `rs` (RoundStartTime) | Room | Master client | RoundManager on every client | Server time the round began |
+| `rd` (RoundDuration) | Room | Master client | RoundManager | Round length in seconds |
+| `st` (RoundState) | Room | Master client | RoundManager | 1 playing, 2 ended |
+| `w` (Winners) | Room | Master client | RoundManager, EndScreenUI | Actor numbers of the winner(s) |
+| `wn` (WinnerNames) | Room | Master client | EndScreenUI | Display names of the winner(s) |
 
 ### Serialize views
 
@@ -210,6 +251,8 @@ sequenceDiagram
     A->>P: Room IsOpen = false, IsVisible = false
     A->>P: LoadLevel("Game") sets room scene property
     P-->>B: Room scene = Game, auto load
+    A->>P: Room props: rs = PhotonNetwork.Time, rd = 90, st = Playing
+    P-->>B: OnRoomPropertiesUpdate -> timer runs locally
     A->>P: Instantiate Player (owner A)
     B->>P: Instantiate Player (owner B)
     P-->>A: B's player appears
@@ -232,4 +275,8 @@ sequenceDiagram
     B->>P: PhotonNetwork.Destroy(player B)
     Note over B: 3 s countdown
     B->>P: Instantiate Player (respawn)
+    Note over A: Timer reaches 0 (master only acts)
+    A->>P: Room props: st = Ended, w = [A], wn = "A"
+    P-->>A: OnRoomPropertiesUpdate -> end screen "You Won!"
+    P-->>B: OnRoomPropertiesUpdate -> end screen "You Lost"
 ```

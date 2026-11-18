@@ -49,6 +49,12 @@ public class PlayerHealth : MonoBehaviourPun, IPunObservable
             return;
         }
 
+        // Projectiles already in flight when the timer hits zero do nothing.
+        if (RoundManager.Instance != null && !RoundManager.Instance.IsRoundActive)
+        {
+            return;
+        }
+
         CurrentHealth = Mathf.Max(0, CurrentHealth - amount);
         HealthChanged?.Invoke(CurrentHealth, maxHealth);
 

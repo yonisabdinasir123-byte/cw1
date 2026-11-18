@@ -47,19 +47,24 @@ public class ScoreboardUI : MonoBehaviourPunCallbacks
         {
             return;
         }
+        scoreText.text = BuildScoreboardText("SCOREBOARD");
+    }
 
+    /// <summary>Builds the scoreboard lines for every player in the room, most kills first. Shared with the end screen.</summary>
+    public static string BuildScoreboardText(string title)
+    {
         var ordered = PhotonNetwork.PlayerList
             .OrderByDescending(KillTracker.GetKills)
             .ThenBy(KillTracker.GetDeaths)
             .ThenBy(player => player.ActorNumber);
 
         StringBuilder builder = new StringBuilder();
-        builder.AppendLine("<b>SCOREBOARD</b>");
+        builder.AppendLine("<b>" + title + "</b>");
         foreach (Player player in ordered)
         {
             string name = player.IsLocal ? player.NickName + " (you)" : player.NickName;
             builder.AppendLine(string.Format("{0}   {1} K   {2} D", name, KillTracker.GetKills(player), KillTracker.GetDeaths(player)));
         }
-        scoreText.text = builder.ToString();
+        return builder.ToString();
     }
 }

@@ -50,6 +50,12 @@ public class KillTracker : MonoBehaviourPunCallbacks
             return;
         }
 
+        // A kill that lands after the final whistle must not change the published result.
+        if (RoundManager.Instance != null && !RoundManager.Instance.IsRoundActive)
+        {
+            return;
+        }
+
         Player killer = PhotonNetwork.CurrentRoom.GetPlayer(killerActorNumber);
         Player victim = PhotonNetwork.CurrentRoom.GetPlayer(victimActorNumber);
 

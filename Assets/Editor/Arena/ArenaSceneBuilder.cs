@@ -152,6 +152,7 @@ public static class ArenaSceneBuilder
 
         GameManager gameManager = managers.AddComponent<GameManager>();
         managers.AddComponent<KillTracker>();
+        managers.AddComponent<RoundManager>();
         ArenaEditorUtil.SetReferenceArray(gameManager, "spawnPoints", spawnPoints);
     }
 
@@ -197,5 +198,43 @@ public static class ArenaSceneBuilder
 
         ScoreboardUI scoreboard = canvas.gameObject.AddComponent<ScoreboardUI>();
         ArenaEditorUtil.SetReference(scoreboard, "scoreText", scoreText);
+
+        // Top-centre: round timer.
+        Text timerText = ArenaEditorUtil.CreateText(root, "TimerText", "1:30", 56, TextAnchor.UpperCenter,
+            new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-200f, -90f), new Vector2(200f, -16f));
+        RoundTimerUI timer = canvas.gameObject.AddComponent<RoundTimerUI>();
+        ArenaEditorUtil.SetReference(timer, "timerText", timerText);
+
+        BuildEndScreen(canvas);
+    }
+
+    private static void BuildEndScreen(Canvas canvas)
+    {
+        // Added last so it draws above the HUD.
+        Image overlay = ArenaEditorUtil.CreateImage(canvas.transform, "EndScreen", new Color(0f, 0f, 0f, 0.75f),
+            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Transform p = overlay.transform;
+
+        Text winner = ArenaEditorUtil.CreateText(p, "WinnerText", "Winner", 96, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-900f, 180f), new Vector2(900f, 320f));
+        winner.color = new Color(1f, 0.9f, 0.4f);
+        Text result = ArenaEditorUtil.CreateText(p, "ResultText", "You Won!", 64, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-600f, 90f), new Vector2(600f, 180f));
+        Image scoreBackground = ArenaEditorUtil.CreateImage(p, "FinalScorePanel", new Color(0f, 0f, 0f, 0.5f),
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-300f, -170f), new Vector2(300f, 70f));
+        Text finalScore = ArenaEditorUtil.CreateText(scoreBackground.transform, "FinalScoreText", "FINAL SCORES", 30, TextAnchor.UpperLeft,
+            Vector2.zero, Vector2.one, new Vector2(20f, 12f), new Vector2(-20f, -12f));
+        Button leave = ArenaEditorUtil.CreateButton(p, "LeaveButton", "Leave",
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-150f, -280f), new Vector2(150f, -200f));
+        leave.image.color = new Color(0.75f, 0.25f, 0.25f);
+
+        EndScreenUI endScreen = canvas.gameObject.AddComponent<EndScreenUI>();
+        ArenaEditorUtil.SetReference(endScreen, "panel", overlay.gameObject);
+        ArenaEditorUtil.SetReference(endScreen, "winnerText", winner);
+        ArenaEditorUtil.SetReference(endScreen, "resultText", result);
+        ArenaEditorUtil.SetReference(endScreen, "finalScoreText", finalScore);
+        ArenaEditorUtil.SetReference(endScreen, "leaveButton", leave);
+
+        overlay.gameObject.SetActive(false);
     }
 }
