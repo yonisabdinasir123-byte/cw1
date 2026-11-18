@@ -23,12 +23,24 @@ public class EndScreenUI : MonoBehaviour
     [SerializeField, Tooltip("Returns to the lobby.")]
     private Button leaveButton;
 
+    [SerializeField, Tooltip("Votes for another round.")]
+    private Button playAgainButton;
+
+    [SerializeField, Tooltip("Explains the Play Again state: votes so far, or why it is disabled.")]
+    private Text playAgainHintText;
+
     private void Start()
     {
         panel.SetActive(false);
         leaveButton.onClick.AddListener(() => GameManager.Instance.LeaveGame());
+        playAgainButton.onClick.AddListener(() =>
+        {
+            PlayAgainController.Instance.VoteReady();
+            RefreshPlayAgain();
+        });
         RoundManager.Instance.RoundEnded += Show;
         RoundManager.Instance.RoundStarted += Hide;
+        PlayAgainController.Instance.VotesChanged += RefreshPlayAgain;
     }
 
     private void OnDestroy()
@@ -37,6 +49,39 @@ public class EndScreenUI : MonoBehaviour
         {
             RoundManager.Instance.RoundEnded -= Show;
             RoundManager.Instance.RoundStarted -= Hide;
+        }
+        if (PlayAgainController.Instance != null)
+        {
+            PlayAgainController.Instance.VotesChanged -= RefreshPlayAgain;
+        }
+    }
+
+    /// <summary>Updates the Play Again button and its hint from the live player and vote counts.</summary>
+    private void RefreshPlayAgain()
+    {
+        if (!panel.activeSelf)
+        {
+            return;
+        }
+
+        PlayAgainController votes = PlayAgainController.Instance;
+        if (!votes.EnoughPlayers)
+        {
+            playAgainButton.interactable = false;
+            playAgainHintText.text = "Not enough players to play again. Waiting for another player, or Leave to return to the lobby.";
+            return;
+        }
+
+        string tally = " (" + votes.ReadyCount + " / " + votes.PlayerCount + " ready)";
+        if (votes.LocalIsReady)
+        {
+            playAgainButton.interactable = false;
+            playAgainHintText.text = "Waiting for the other players" + tally;
+        }
+        else
+        {
+            playAgainButton.interactable = true;
+            playAgainHintText.text = "Vote to play another round" + tally;
         }
     }
 
@@ -57,6 +102,7 @@ public class EndScreenUI : MonoBehaviour
 
         finalScoreText.text = ScoreboardUI.BuildScoreboardText("FINAL SCORES");
         panel.SetActive(true);
+        RefreshPlayAgain();
     }
 
     private void Hide()

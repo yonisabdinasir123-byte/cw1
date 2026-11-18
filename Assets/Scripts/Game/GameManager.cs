@@ -19,8 +19,8 @@ public class GameManager : MonoBehaviourPunCallbacks
     [SerializeField, Tooltip("Seconds between dying and respawning.")]
     private float respawnDelay = 3f;
 
-    /// <summary>True while players are allowed to spawn and fight. The round manager turns this off at the end.</summary>
-    public bool RoundActive { get; private set; } = true;
+    /// <summary>True while players are allowed to spawn and fight. The round manager turns this on and off.</summary>
+    public bool RoundActive { get; private set; }
 
     /// <summary>Fired every frame during the respawn countdown with the seconds remaining, then once with 0.</summary>
     public event Action<float> RespawnCountdown;
@@ -46,6 +46,45 @@ public class GameManager : MonoBehaviourPunCallbacks
             // Pressing Play directly in the Game scene is not supported: go through the menu.
             SceneManager.LoadScene(NetworkKeys.MainMenuScene);
             return;
+        }
+
+        // Spawn when the round starts. If the round is already running (we loaded late, or the
+        // start property arrived before this Start ran), spawn right away.
+        RoundManager.Instance.RoundStarted += HandleRoundStarted;
+        if (RoundManager.Instance.IsRoundActive)
+        {
+            HandleRoundStarted();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.RoundStarted -= HandleRoundStarted;
+        }
+    }
+
+    /// <summary>
+    /// Runs on every client at round start and at every Play Again restart: removes our old player
+    /// and projectiles, cancels a pending respawn and spawns a fresh player at full health.
+    /// </summary>
+    private void HandleRoundStarted()
+    {
+        if (respawnRoutine != null)
+        {
+            StopCoroutine(respawnRoutine);
+            respawnRoutine = null;
+            RespawnCountdown?.Invoke(0f);
+        }
+
+        foreach (PlayerHealth player in FindObjectsByType<PlayerHealth>(FindObjectsSortMode.None))
+        {
+            if (player.photonView.IsMine) PhotonNetwork.Destroy(player.gameObject);
+        }
+        foreach (Projectile projectile in FindObjectsByType<Projectile>(FindObjectsSortMode.None))
+        {
+            if (projectile.photonView.IsMine) PhotonNetwork.Destroy(projectile.gameObject);
         }
 
         SpawnLocalPlayer();

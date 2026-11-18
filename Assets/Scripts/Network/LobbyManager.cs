@@ -190,7 +190,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         // Every player starts a match with zero kills and deaths.
-        Hashtable startingScore = new Hashtable { { NetworkKeys.Kills, 0 }, { NetworkKeys.Deaths, 0 } };
+        Hashtable startingScore = new Hashtable { { NetworkKeys.Kills, 0 }, { NetworkKeys.Deaths, 0 }, { NetworkKeys.Ready, false } };
         PhotonNetwork.LocalPlayer.SetCustomProperties(startingScore);
 
         ui.ShowRoomPanel();

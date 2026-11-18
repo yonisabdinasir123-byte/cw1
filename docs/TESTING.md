@@ -66,3 +66,15 @@ For a quick test, select the GameManager object in the Game scene and set Round 
 - [ ] Master-switch test: start a round, then have the host (Player 1) click Leave mid-round. Player 2's timer keeps counting without a jump, and when it reaches 0 Player 2 sees the end screen (Player 2 is now master).
 - [ ] Leave on the end screen returns to the lobby.
 - [ ] Console has no red errors.
+
+## Phase 4: Play Again
+
+Setup: Fetch and Pull, open Unity, wait for compile, **Tools > Arena > 3. Build Game Scene**, set Round Duration Seconds to 30 on GameManager again if you want quick rounds, Cmd+S, open MainMenu, commit and push.
+
+- [ ] End screen shows Play Again (green) and Leave (red) with the hint "Vote to play another round (0 / 2 ready)".
+- [ ] Player 1 clicks Play Again: their button greys out, both hints read "(1 / 2 ready)".
+- [ ] Player 2 clicks Play Again: both windows instantly return to the arena, timer restarted, health full, scoreboard 0 K 0 D, no leftover projectiles.
+- [ ] Play the second round to the end: the end screen appears again and the winner is from the second round only.
+- [ ] Single-player case: on the end screen, Player 2 clicks Leave. Player 1's Play Again greys out with "Not enough players to play again". Leave still works.
+- [ ] Host-leaves case: on the end screen, Player 2 votes first, then Player 1 (host) clicks Leave. Player 2's screen updates to "Not enough players"; no errors.
+- [ ] Console has no red errors through all of the above.

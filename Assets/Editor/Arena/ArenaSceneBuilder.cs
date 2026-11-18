@@ -153,6 +153,7 @@ public static class ArenaSceneBuilder
         GameManager gameManager = managers.AddComponent<GameManager>();
         managers.AddComponent<KillTracker>();
         managers.AddComponent<RoundManager>();
+        managers.AddComponent<PlayAgainController>();
         ArenaEditorUtil.SetReferenceArray(gameManager, "spawnPoints", spawnPoints);
     }
 
@@ -224,8 +225,14 @@ public static class ArenaSceneBuilder
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-300f, -170f), new Vector2(300f, 70f));
         Text finalScore = ArenaEditorUtil.CreateText(scoreBackground.transform, "FinalScoreText", "FINAL SCORES", 30, TextAnchor.UpperLeft,
             Vector2.zero, Vector2.one, new Vector2(20f, 12f), new Vector2(-20f, -12f));
+        Text playAgainHint = ArenaEditorUtil.CreateText(p, "PlayAgainHint", string.Empty, 26, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-700f, -230f), new Vector2(700f, -180f));
+        playAgainHint.color = new Color(0.9f, 0.85f, 0.5f);
+        Button playAgain = ArenaEditorUtil.CreateButton(p, "PlayAgainButton", "Play Again",
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-330f, -330f), new Vector2(-20f, -250f));
+        playAgain.image.color = new Color(0.2f, 0.65f, 0.35f);
         Button leave = ArenaEditorUtil.CreateButton(p, "LeaveButton", "Leave",
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-150f, -280f), new Vector2(150f, -200f));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(20f, -330f), new Vector2(330f, -250f));
         leave.image.color = new Color(0.75f, 0.25f, 0.25f);
 
         EndScreenUI endScreen = canvas.gameObject.AddComponent<EndScreenUI>();
@@ -234,6 +241,8 @@ public static class ArenaSceneBuilder
         ArenaEditorUtil.SetReference(endScreen, "resultText", result);
         ArenaEditorUtil.SetReference(endScreen, "finalScoreText", finalScore);
         ArenaEditorUtil.SetReference(endScreen, "leaveButton", leave);
+        ArenaEditorUtil.SetReference(endScreen, "playAgainButton", playAgain);
+        ArenaEditorUtil.SetReference(endScreen, "playAgainHintText", playAgainHint);
 
         overlay.gameObject.SetActive(false);
     }

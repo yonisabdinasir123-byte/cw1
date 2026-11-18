@@ -13,6 +13,9 @@ public static class NetworkKeys
     /// <summary>Number of times this player has died in the current round. Written only by the master client.</summary>
     public const string Deaths = "d";
 
+    /// <summary>True once this player has voted Play Again on the end screen. Bool.</summary>
+    public const string Ready = "r";
+
     // ---- Room custom properties (written only by the master client) ----
 
     /// <summary>PhotonNetwork.Time (server clock) at which the current round started. Double.</summary>

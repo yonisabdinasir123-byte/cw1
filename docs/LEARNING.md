@@ -195,6 +195,38 @@ Questions:
   and `PlayerHealth.TakeDamage` both return early once `IsRoundActive` is false, and the master
   reads the scores at the moment it ends the round.
 
+### PlayAgainController (Assets/Scripts/Game/PlayAgainController.cs)
+Purpose: Play Again by vote. Design choice: **ready-vote, executed by the master**, rather than a
+host-only restart button. Every player consents, nobody gets dragged into a round while trying to
+leave, and the master still does the actual restart, so the single-writer rule for scores and the
+timer is untouched.
+Key methods:
+- `VoteReady`: sets our `Ready` player property to true. Blocked while a round is active, when we
+  already voted, or when fewer than two players are connected.
+- `OnPlayerPropertiesUpdate`, `OnPlayerLeftRoom`, `OnMasterClientSwitched`: raise `VotesChanged`
+  for the UI and call `EvaluateVotes` on the master.
+- `EvaluateVotes` (master only): restart when the round has ended, `PlayerCount >= 2` and
+  `ReadyCount == PlayerCount`. A player leaving can complete the vote (the leaver no longer counts)
+  or cancel it (only one player left).
+- `RestartRound` (master only): `KillTracker.ResetAllScores()`, every player's `Ready` back to
+  false, then `RoundManager.StartRound()`. The new `st = Playing` property reaches every client, and
+  `GameManager.HandleRoundStarted` destroys that client's old player and projectiles and spawns a
+  fresh one. Health, kills, timer and positions are therefore reset everywhere with one property.
+Network: player custom properties for votes (a new master can count them after a switch), room
+properties for the restart itself.
+Questions:
+- *Why votes and not a host button?* Fairness and robustness. The host could otherwise restart
+  while another player is mid-click on Leave, and if the host left, nobody could restart. With
+  votes, the new master simply continues counting.
+- *What happens if one player leaves on the end screen?* `OnPlayerLeftRoom` fires, the button
+  greys out with "Not enough players to play again", and the remaining player can Leave to the
+  lobby. If three were present and one leaves, the remaining two can still restart.
+- *How is "works only with 2+ players" guaranteed?* Both ends check it: the button is only
+  interactable when `PlayerCount >= 2`, and `EvaluateVotes` refuses to restart below two, even if
+  stale votes exist.
+- *Why does GameManager spawn on `RoundStarted` instead of in `Start`?* So the first round and
+  every restart use the same code path, and nothing spawns before the master has published a round.
+
 ### EndScreenUI and RoundTimerUI
 `RoundTimerUI` formats `RoundManager.RemainingSeconds` as m:ss and turns red under ten seconds.
 `EndScreenUI` subscribes to `RoundEnded`, writes the winner's name in large text, the personal
@@ -222,6 +254,7 @@ the camera. `PlayerNameTag` displays `photonView.Owner.NickName`.
 |---|---|---|---|---|
 | `k` (Kills) | Player | Master client (0 on join by the player) | ScoreboardUI, future RoundManager | Kills this round |
 | `d` (Deaths) | Player | Master client (0 on join by the player) | ScoreboardUI | Deaths this round |
+| `r` (Ready) | Player | The player (true), master (false on restart) | PlayAgainController | Voted Play Again |
 | `rs` (RoundStartTime) | Room | Master client | RoundManager on every client | Server time the round began |
 | `rd` (RoundDuration) | Room | Master client | RoundManager | Round length in seconds |
 | `st` (RoundState) | Room | Master client | RoundManager | 1 playing, 2 ended |
@@ -279,4 +312,10 @@ sequenceDiagram
     A->>P: Room props: st = Ended, w = [A], wn = "A"
     P-->>A: OnRoomPropertiesUpdate -> end screen "You Won!"
     P-->>B: OnRoomPropertiesUpdate -> end screen "You Lost"
+    A->>P: Player prop r = true (Play Again)
+    B->>P: Player prop r = true (Play Again)
+    Note over A: Master counts 2 / 2 ready, 2 players
+    A->>P: Reset k, d, r for all; room props rs = now, st = Playing
+    P-->>A: RoundStarted -> destroy old player, spawn new
+    P-->>B: RoundStarted -> destroy old player, spawn new
 ```
