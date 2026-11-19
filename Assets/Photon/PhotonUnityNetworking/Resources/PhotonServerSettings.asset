@@ -42,6 +42,11 @@ MonoBehaviour:
   - RespawnSpaceship
   - RpcReportKill
   - TakeDamage
+  - RpcAnnounceKill
+  - RpcApplyPowerUp
+  - RpcDashEffect
+  - RpcDeathEffect
+  - RpcRequestPickup
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 0
