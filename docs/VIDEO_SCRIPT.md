@@ -52,3 +52,94 @@ All files are in `Assets/Scripts/`. Line numbers shift if a file is edited, but 
 | 5:05 to 5:30 | Alice clicks Play Again: "1 / 2 ready". Bob clicks Play Again: both return to the arena with full health, 0 K 0 D and a fresh timer. Then code: `PlayAgainController.EvaluateVotes` | "Play Again is a vote. Each player sets a Ready property. The master restarts only when everyone still connected has voted and at least two players remain, resetting kills, health, timer, spawns and projectiles on every client." | 7 |
 | 5:30 to 5:50 | Let the round end. Bob clicks Leave. Alice's Play Again greys out: "Not enough players to play again". Alice clicks Leave and returns to the lobby, then Quit | "If only one player is left, Play Again is disabled and the player is told why. Leave returns to the lobby, and Quit closes the game." | 7, 2 (leave, quit), 3 |
 | 5:50 to 6:00 | Both windows on the lobby | "That is a complete networked match, from the lobby to the winner and Play Again, with no bugs. Thank you for watching." | Wrap-up |
+
+## Full voice-over
+
+About 900 words, roughly 6 to 6.5 minutes at a calm pace. Lines in **[brackets]** are what to show; do not read them out.
+Read it through out loud a few times before recording and change any wording that does not sound like you.
+Markers reward understanding, so you should be able to explain every sentence if asked.
+
+**0:00 Intro**
+[Both windows side by side on the Connect panel]
+
+"Hi, my name is ______, and this is my multiplayer arena shooter, built in Unity 6 with Photon PUN 2. On the left is a Mac build and on the right is the Unity Editor, so these are two separate clients talking over the internet."
+
+**0:15 How Photon works**
+[Stay on the Connect panel. Optional: VS Code, Cmd+P `PhotonServerSettings` is not code, so instead show it in Unity: Window > Photon Unity Networking > Highlight Server Settings]
+
+"First, how the networking works. Photon is a cloud relay, so I did not write a server. When I press Connect, ConnectUsingSettings reads my App ID from the Photon Server Settings and contacts Photon's Name Server. That picks the closest region, here Europe, and sends us to that region's Master Server, which holds the lobby and the room list. When we create or join a room, Photon moves us to a Game Server that hosts the room and relays every message between its players.
+
+Inside a room, one player is the master client, normally whoever created it. I use the master client as the referee for anything that needs one decision: scores, the timer, the winner and restarting."
+
+**0:50 Lobby**
+[Type Alice and Bob, Connect. Alice: Max players 2, Create Room. Bob clicks it in the list. Bob's Start is greyed. Alice clicks Start Game]
+
+"Each player types a nickname, which is stored in PhotonNetwork.NickName so everyone sees it. Alice creates a room for two. It appears in Bob's list, he joins, and both see the player list with the host marked. Bob's Start button is disabled because only the host can start, and Alice's only turns on with two players."
+
+**1:10 Lobby code**
+[VS Code: Cmd+P `LobbyManager`, Cmd+Shift+O `OnRoomListUpdate`. Select the foreach loop]
+
+"OnRoomListUpdate is a Photon callback. Photon does not send the whole list each time, only what changed. So I keep a dictionary keyed by room name: I update rooms that changed, remove rooms marked RemovedFromList or closed, and redraw the list from the dictionary."
+
+[Cmd+Shift+O `StartGame`. Select the IsOpen, IsVisible and LoadLevel lines]
+
+"StartGame checks that I am the master client and there are at least two players. It sets IsOpen and IsVisible to false so nobody can join halfway through, then calls PhotonNetwork.LoadLevel. Because AutomaticallySyncScene is on, every other client loads the arena automatically."
+
+**1:45 Gameplay**
+[Alice moves in all eight directions, along walls. Bob shoots Alice until she dies, respawns. Scoreboard updates]
+
+"The arena is closed in by walls that stop players and bullets. I move in eight directions with WASD, and bullets fire in the direction I last moved, even when standing still. When Bob hits me, my health drops on both screens. At zero I die, wait three seconds and respawn at the spawn point furthest from enemies, and the scoreboard updates everywhere."
+
+**2:10 Three ways to sync data**
+[Keep the gameplay on screen]
+
+"Every networked object has a PhotonView: an ID that is the same on all clients, and an owner. Photon then gives three ways to share data, and I picked one for each job. Serialization streams values about fifteen times a second and does not resend lost packets. That suits things that change constantly, where only the latest value matters, like position and health. RPCs, remote procedure calls, are reliable one-off messages that run a method on other clients, for events like taking damage. Custom properties are stored on Photon's server for a player or the room, so anyone can read them later, even a new master client. I use them for scores, the timer and the winner."
+
+**2:40 Movement code**
+[VS Code: Cmd+P `PlayerMovement`, Cmd+Shift+O `Update`. Select `photonView.IsMine`, then `Normalize`]
+
+"In PlayerMovement.Update, the first check is photonView.IsMine. Only the owner reads the keyboard; the copy on the other screen just follows the network. I normalise the input so diagonals are not faster, and remember the facing direction for shooting. A PhotonTransformView on the prefab sends the position and smooths it on other screens."
+
+**3:00 Damage and kills code**
+[Cmd+P `Projectile`, Cmd+Shift+O `OnTriggerEnter`. Select the RPC line]
+
+"Bullets are made with PhotonNetwork.Instantiate, so each has an owner. Every client sees the hit, but only the shooter's client sends damage, as a TakeDamage RPC to the victim's owner only. One decision, one message, so damage is never applied twice."
+
+[Cmd+P `PlayerHealth`, Cmd+Shift+O `TakeDamage`, then Cmd+P `KillTracker`, Cmd+Shift+O `RpcReportKill`]
+
+"The victim applies the damage. At zero it reports the kill to the master client. In RpcReportKill the master is the only one who writes kills and deaths into player custom properties, so two kills at the same moment cannot overwrite each other. Every scoreboard redraws in OnPlayerPropertiesUpdate."
+
+**3:35 Customisations**
+[Alice dashes with Shift. A power-up spawns. Bob takes the purple shield; Alice's shots do nothing. A kill shows the kill feed on both screens]
+
+"For customisation I added a dash, power-ups, a kill feed, and hit and death effects with sound. Shift dashes with a trail both players see. Power-ups appear every eight seconds: blue for speed, yellow for rapid fire, purple for a shield. Bob takes the shield, the bubble shows on both screens and my shots do nothing. Kills appear in the same kill feed on both screens."
+
+**4:00 Power-up code**
+[Cmd+P `PowerUp`, Cmd+Shift+O `OnTriggerEnter`, then `RpcRequestPickup`. Select `RpcTarget.MasterClient` and `awarded`]
+
+"The master spawns power-ups with InstantiateRoomObject, so they belong to the room and survive the host leaving. When one is touched, only the toucher's own client reacts, and it just asks the master. The master checks an awarded flag, so if two players touch it together only the first wins. It then tells everyone with one RPC and destroys the pick-up."
+
+**4:25 Round end**
+[Let the timer reach 0:00. Show both end screens. Press keys to show nothing moves]
+
+"Rounds last sixty seconds, and the timer matches on both screens. At zero both clients show the end screen: Alice wins, with You Won on her screen and You Lost on Bob's, and the controls are frozen."
+
+**4:40 Timer and winner code**
+[Cmd+P `RoundManager`, Cmd+Shift+O `StartRound`, then `Update`, then `EndRound`]
+
+"In StartRound the master saves the start time in a room property using PhotonNetwork.Time, the server clock every client is synced to. In Update each client works out the time left from that start time, so nothing is sent each frame and all timers agree. If the host leaves, the start time is still in the room, so the timer carries on. Only the master calls EndRound. It sorts players by kills, then fewest deaths, treats anyone still level as a draw, and saves the winner as a room property. Every client shows the end screen when that property changes, and works out for itself whether it won."
+
+**5:15 Play Again**
+[Alice clicks Play Again: 1 / 2 ready. Bob clicks: both back in with full health, 0 kills, new timer. Then Cmd+P `PlayAgainController`, Cmd+Shift+O `EvaluateVotes`]
+
+"Play Again is a vote that I designed myself. I click it and it shows one of two ready. When Bob votes, we both restart with full health, zero kills and a new timer. In EvaluateVotes the master only restarts when every connected player has voted and there are at least two players. A vote is fairer than a host-only button, and if the host leaves, the new master simply keeps counting."
+
+**5:50 One player left**
+[Let a round end. Bob clicks Leave. Alice's Play Again is greyed with "Not enough players". Alice clicks Leave, then Quit]
+
+"If Bob leaves, my Play Again is disabled and the game tells me there are not enough players, so I return to the lobby. The same check ends a round early if someone quits mid-match."
+
+**6:05 Wrap-up**
+[Both windows back on the lobby]
+
+"To sum up: Photon relays the messages, the owner of each object controls it, and the master client is the referee for scores, time and the winner. That keeps the whole match in sync, from the lobby to Play Again. Thanks for watching."
