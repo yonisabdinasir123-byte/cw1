@@ -6,21 +6,20 @@
 - [ ] Build Settings list only MainMenu (0) and Game (1).
 - [ ] One full two-player match plays with no red Console errors.
 
-## 2. Remove unused assets (confirm before deleting)
+## 2. Unused assets (done)
 
-| Candidate | Size | Why it is safe to remove |
+These were removed from the repository on 19 Nov:
+
+| Removed | Size | Why |
 |---|---|---|
-| `Assets/Photon/PhotonUnityNetworking/Demos/` | 30.0 MB | Photon example scenes; none of our scripts use them |
-| `Assets/Photon/PhotonChat/Demos/` | 2.0 MB | Chat example; we do not use Photon Chat |
+| `Assets/Photon/PhotonUnityNetworking/Demos/` | 30.0 MB | Photon example scenes, not used by the game |
+| `Assets/Photon/PhotonChat/Demos/` | 2.0 MB | Chat example, Photon Chat is not used |
 | `Assets/Photon/PhotonRealtime/Demos/` | 0.4 MB | Realtime example scene |
 | `Assets/Photon/PhotonNetworking-Documentation.chm` | 1.5 MB | Offline help file |
-| `Assets/TutorialInfo/` and `Assets/Readme.asset` | < 0.1 MB | Unity template welcome page |
-| `Assets/Scenes/SampleScene.unity` and `Assets/Settings/SampleSceneProfile.asset` | < 0.1 MB | Template scene, not in Build Settings |
+| `Assets/TutorialInfo/`, `Assets/Readme.asset` | < 0.1 MB | Unity template welcome page |
+| `Assets/Scenes/SampleScene.unity` | < 0.1 MB | Template scene, not in Build Settings |
 
-Keep: the rest of `Assets/Photon` (Code, Libs, Realtime/Code, Chat/Code, UtilityScripts, Resources with
-your App ID), `InputSystem_Actions` (referenced by project settings), `Assets/Settings` (URP assets).
-
-Removing these takes the project from about 38 MB to about 4 MB, before Library is excluded.
+Kept on purpose: `Assets/Settings/SampleSceneProfile.asset`, because the URP render pipeline assets use it as their volume profile, and `InputSystem_Actions`, which the project settings reference.
 
 ## 3. Folders and files that must NOT be in the zip
 Unity regenerates all of these. They are already in `.gitignore`.
