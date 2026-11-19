@@ -18,7 +18,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
     public static RoundManager Instance { get; private set; }
 
     [SerializeField, Tooltip("Round length in seconds. The master client's value is used for everyone.")]
-    private float roundDurationSeconds = 90f;
+    private float roundDurationSeconds = 60f;
 
     /// <summary>True while players may fight. False before the first round and after the timer ends.</summary>
     public bool IsRoundActive => state == NetworkKeys.RoundPlaying;
