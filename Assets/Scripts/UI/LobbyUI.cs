@@ -69,6 +69,23 @@ public class LobbyUI : MonoBehaviour
         UpdateMaxPlayersLabel();
     }
 
+    /// <summary>
+    /// Locks or unlocks every lobby button while a request is with Photon. This stops
+    /// double-clicks sending the same request twice (two CreateRoom calls, two LoadLevels).
+    /// </summary>
+    public void SetBusy(bool busy)
+    {
+        foreach (GameObject panel in new[] { connectPanel, lobbyPanel, roomPanel })
+        {
+            CanvasGroup group = panel.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = panel.AddComponent<CanvasGroup>();
+            }
+            group.interactable = !busy;
+        }
+    }
+
     public void ShowConnectPanel()
     {
         connectPanel.SetActive(true);

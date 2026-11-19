@@ -20,8 +20,13 @@ public class PlayAgainController : MonoBehaviourPunCallbacks
     /// <summary>True when enough players are connected for another round.</summary>
     public bool EnoughPlayers => PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.PlayerCount >= LobbyManager.MinPlayersToStart;
 
-    /// <summary>True once this client has voted.</summary>
-    public bool LocalIsReady => IsReady(PhotonNetwork.LocalPlayer);
+    /// <summary>
+    /// True once this client has voted. The local flag covers the moment between clicking and the
+    /// server echoing our property back, so the button cannot flicker back on.
+    /// </summary>
+    public bool LocalIsReady => votedLocally || IsReady(PhotonNetwork.LocalPlayer);
+
+    private bool votedLocally;
 
     public int PlayerCount => PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.PlayerCount : 0;
 
@@ -43,6 +48,24 @@ public class PlayAgainController : MonoBehaviourPunCallbacks
         Instance = this;
     }
 
+    private void Start()
+    {
+        RoundManager.Instance.RoundStarted += HandleRoundStarted;
+    }
+
+    private void OnDestroy()
+    {
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.RoundStarted -= HandleRoundStarted;
+        }
+    }
+
+    private void HandleRoundStarted()
+    {
+        votedLocally = false;
+    }
+
     /// <summary>Called by the Play Again button. Publishes our vote.</summary>
     public void VoteReady()
     {
@@ -50,6 +73,7 @@ public class PlayAgainController : MonoBehaviourPunCallbacks
         {
             return;
         }
+        votedLocally = true;
         PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { NetworkKeys.Ready, true } });
     }
 

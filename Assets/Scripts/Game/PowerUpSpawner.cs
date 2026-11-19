@@ -88,7 +88,9 @@ public class PowerUpSpawner : MonoBehaviourPunCallbacks
 
             PowerUpType type = (PowerUpType)Random.Range(0, 3);
             object[] data = { (int)type };
-            PhotonNetwork.Instantiate(NetworkKeys.PowerUpPrefab, point.position, Quaternion.identity, 0, data);
+            // A room object belongs to the room, not to this player, so it survives the master
+            // leaving and control passes to the new master automatically.
+            PhotonNetwork.InstantiateRoomObject(NetworkKeys.PowerUpPrefab, point.position, Quaternion.identity, 0, data);
             return;
         }
     }

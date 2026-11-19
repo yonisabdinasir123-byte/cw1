@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -26,6 +27,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     public event Action<float> RespawnCountdown;
 
     private Coroutine respawnRoutine;
+    private bool leaving;
 
     private void Awake()
     {
@@ -111,12 +113,32 @@ public class GameManager : MonoBehaviourPunCallbacks
     public void SetRoundActive(bool active)
     {
         RoundActive = active;
+
+        // A player who died in the last seconds should not sit behind the end screen counting down.
+        if (!active && respawnRoutine != null)
+        {
+            StopCoroutine(respawnRoutine);
+            respawnRoutine = null;
+            RespawnCountdown?.Invoke(0f);
+        }
     }
 
-    /// <summary>Leaves the room. OnLeftRoom then returns us to the menu.</summary>
+    /// <summary>Leaves the room once, however many times the button is clicked. OnLeftRoom then returns us to the menu.</summary>
     public void LeaveGame()
     {
+        if (leaving || !PhotonNetwork.InRoom)
+        {
+            return;
+        }
+        leaving = true;
         PhotonNetwork.LeaveRoom();
+    }
+
+    /// <summary>Photon callback: the connection dropped mid-match. Go back to the menu and say why.</summary>
+    public override void OnDisconnected(DisconnectCause cause)
+    {
+        LobbyManager.LastDisconnectMessage = "Lost connection during the match (" + cause + "). Press Connect to try again.";
+        SceneManager.LoadScene(NetworkKeys.MainMenuScene);
     }
 
     public override void OnLeftRoom()

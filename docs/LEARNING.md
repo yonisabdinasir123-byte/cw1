@@ -284,6 +284,33 @@ All sounds are synthesised in `SoundBank` at start-up (sweeps, noise bursts, sho
 audio files are needed and the submission stays small. A red screen flash plays on the owner when
 their health drops.
 
+## Phase 6 hardening: what was fixed and why
+
+| Edge case | Problem before | Fix | Where |
+|---|---|---|---|
+| Spam-clicking lobby buttons | Two `CreateRoom` or `LoadLevel` calls; Photon logs errors | `LobbyUI.SetBusy` locks every panel through a `CanvasGroup` from the click until Photon answers | LobbyUI, LobbyManager |
+| Spam-clicking Leave in game | Second `LeaveRoom` while already leaving | `leaving` flag in `GameManager.LeaveGame`, buttons disabled on click | GameManager, HudUI, EndScreenUI |
+| Play Again double vote | Button re-enabled until the server echoed the property | Local `votedLocally` flag, reset on round start | PlayAgainController |
+| Player leaves mid-round | Last player played on alone until the timer ran out | Master ends the round at once with reason "not enough players"; Play Again is disabled and Leave returns to the lobby | RoundManager.EndIfTooFewPlayers |
+| Master leaves mid-round | Power-ups the master spawned vanished with it | `InstantiateRoomObject`: pick-ups belong to the room and pass to the new master | PowerUpSpawner |
+| Master leaves at 0:00 | (already safe) start time is a room property, new master ends the round | none needed | RoundManager |
+| Late join | (already safe) room closed and hidden on Start | none needed | LobbyManager.StartGame |
+| Two players die at once, or kill on the final frame | (already safe) one writer for scores, kills after the end are rejected | none needed | KillTracker |
+| Dying in the last seconds | Respawn countdown kept running behind the end screen | Countdown cancelled when the round ends | GameManager.SetRoundActive |
+| Disconnect during a match | Player stuck in the arena with no connection | `OnDisconnected` returns to the menu and the menu shows the reason | GameManager, LobbyManager |
+| Console warning "Player already registered" | Built-in Player tag was added to the custom tag list | Removed from TagManager; the builder only adds custom tags | ArenaEditorUtil |
+| Kill feed after Play Again | Old lines carried into the new round | Cleared on round start | KillFeedUI |
+
+Viva questions:
+- *What happens if your opponent rage-quits?* The master gets `OnPlayerLeftRoom`, sees one player
+  left, and ends the round with a reason. The remaining player sees the end screen, a disabled Play
+  Again with "Not enough players", and can Leave to the lobby.
+- *How did you stop double-clicks?* Every request to Photon locks the lobby UI until Photon
+  answers with a success or failure callback, which then unlocks it.
+- *Why InstantiateRoomObject for power-ups but Instantiate for players?* A player object should
+  disappear when its player leaves. A pick-up belongs to the arena, so it should survive whoever
+  happened to spawn it.
+
 ## Network reference tables
 
 ### RPCs
@@ -308,6 +335,7 @@ their health drops.
 | `rs` (RoundStartTime) | Room | Master client | RoundManager on every client | Server time the round began |
 | `rd` (RoundDuration) | Room | Master client | RoundManager | Round length in seconds |
 | `st` (RoundState) | Room | Master client | RoundManager | 1 playing, 2 ended |
+| `er` (EndReason) | Room | Master client | EndScreenUI | Why the round ended early, empty if the timer ran out |
 | `w` (Winners) | Room | Master client | RoundManager, EndScreenUI | Actor numbers of the winner(s) |
 | `wn` (WinnerNames) | Room | Master client | EndScreenUI | Display names of the winner(s) |
 

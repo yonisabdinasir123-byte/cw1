@@ -58,7 +58,11 @@ public class HudUI : MonoBehaviour
     private void Start()
     {
         respawnText.text = string.Empty;
-        leaveButton.onClick.AddListener(() => GameManager.Instance.LeaveGame());
+        leaveButton.onClick.AddListener(() =>
+        {
+            leaveButton.interactable = false;
+            GameManager.Instance.LeaveGame();
+        });
         GameManager.Instance.RespawnCountdown += HandleRespawnCountdown;
     }
 

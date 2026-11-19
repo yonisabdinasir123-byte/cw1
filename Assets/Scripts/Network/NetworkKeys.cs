@@ -33,6 +33,9 @@ public static class NetworkKeys
     /// <summary>Display text for the winner(s), e.g. "Alice" or "Alice and Bob". String.</summary>
     public const string WinnerNames = "wn";
 
+    /// <summary>Why the round ended early, or empty when the timer ran out. String.</summary>
+    public const string EndReason = "er";
+
     public const int RoundPlaying = 1;
     public const int RoundEnded = 2;
 

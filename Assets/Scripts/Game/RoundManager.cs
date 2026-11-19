@@ -79,7 +79,8 @@ public class RoundManager : MonoBehaviourPunCallbacks
             { NetworkKeys.RoundDuration, roundDurationSeconds },
             { NetworkKeys.RoundState, NetworkKeys.RoundPlaying },
             { NetworkKeys.Winners, new int[0] },
-            { NetworkKeys.WinnerNames, string.Empty }
+            { NetworkKeys.WinnerNames, string.Empty },
+            { NetworkKeys.EndReason, string.Empty }
         };
         PhotonNetwork.CurrentRoom.SetCustomProperties(props);
     }
@@ -97,7 +98,31 @@ public class RoundManager : MonoBehaviourPunCallbacks
         // Only the referee ends the round, and only once.
         if (RemainingSeconds <= 0f && PhotonNetwork.IsMasterClient && !endRequested)
         {
-            EndRound();
+            EndRound(string.Empty);
+        }
+    }
+
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        EndIfTooFewPlayers();
+    }
+
+    public override void OnMasterClientSwitched(Player newMasterClient)
+    {
+        EndIfTooFewPlayers();
+    }
+
+    /// <summary>
+    /// Master only: a round cannot continue with one player, so it ends at once and the remaining
+    /// player is told why. Called from both callbacks because Photon does not guarantee which of
+    /// "player left" and "master switched" arrives first when the master is the one who left.
+    /// </summary>
+    private void EndIfTooFewPlayers()
+    {
+        if (PhotonNetwork.IsMasterClient && IsRoundActive && !endRequested
+            && PhotonNetwork.CurrentRoom.PlayerCount < LobbyManager.MinPlayersToStart)
+        {
+            EndRound("Round ended early: not enough players");
         }
     }
 
@@ -105,7 +130,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
     /// Master client only. Ranks players by kills (fewest deaths breaks a tie) and publishes the
     /// result. Several players still level on both counts means a draw between them.
     /// </summary>
-    private void EndRound()
+    private void EndRound(string reason)
     {
         endRequested = true;
 
@@ -133,7 +158,8 @@ public class RoundManager : MonoBehaviourPunCallbacks
         {
             { NetworkKeys.RoundState, NetworkKeys.RoundEnded },
             { NetworkKeys.Winners, winners.Select(player => player.ActorNumber).ToArray() },
-            { NetworkKeys.WinnerNames, JoinNames(winners.Select(player => player.NickName).ToList()) }
+            { NetworkKeys.WinnerNames, JoinNames(winners.Select(player => player.NickName).ToList()) },
+            { NetworkKeys.EndReason, reason }
         };
         PhotonNetwork.CurrentRoom.SetCustomProperties(props);
     }
@@ -180,10 +206,12 @@ public class RoundManager : MonoBehaviourPunCallbacks
 
         int[] winners = props.TryGetValue(NetworkKeys.Winners, out object list) && list is int[] ids ? ids : new int[0];
         string names = props.TryGetValue(NetworkKeys.WinnerNames, out object text) ? (string)text : string.Empty;
+        string reason = props.TryGetValue(NetworkKeys.EndReason, out object why) && why is string value ? value : string.Empty;
 
         RoundResult result = new RoundResult
         {
             WinnerNames = names,
+            EndReason = reason,
             IsDraw = winners.Length != 1,
             LocalPlayerIsWinner = winners.Contains(PhotonNetwork.LocalPlayer.ActorNumber)
         };
@@ -222,4 +250,7 @@ public struct RoundResult
 
     /// <summary>True when this client's player is among the winners.</summary>
     public bool LocalPlayerIsWinner;
+
+    /// <summary>Empty when the timer ran out, otherwise why the round ended early.</summary>
+    public string EndReason;
 }

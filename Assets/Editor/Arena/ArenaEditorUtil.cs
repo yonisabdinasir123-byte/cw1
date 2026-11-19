@@ -102,7 +102,8 @@ public static class ArenaEditorUtil
         SerializedObject tagManager = new SerializedObject(assets[0]);
 
         SerializedProperty tags = tagManager.FindProperty("tags");
-        foreach (string tag in new[] { GameTags.PlayerTag, GameTags.ArenaTag, GameTags.SpawnPointTag, GameTags.ProjectileTag })
+        // "Player" is one of Unity's built-in tags, so only the custom ones are added.
+        foreach (string tag in new[] { GameTags.ArenaTag, GameTags.SpawnPointTag, GameTags.ProjectileTag })
         {
             if (!ContainsString(tags, tag))
             {

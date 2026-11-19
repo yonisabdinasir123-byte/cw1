@@ -94,3 +94,18 @@ Setup: Fetch and Pull, open Unity, wait for compile, then **Tools > Arena > 2. B
 - [ ] Play Again: leftover power-ups disappear and spawning starts again.
 - [ ] Host leaves mid-round: power-ups keep spawning for the remaining player (the new master).
 - [ ] Console has no red errors.
+
+## Phase 6: edge cases
+
+Setup: Fetch and Pull, open Unity, wait for compile. No scene rebuild is needed. The Console should no longer show "Player already registered".
+
+- [ ] Spam: double-click Connect, Create Room, a room in the list, Start Game and Leave Room as fast as you can. Each happens once, the Console stays clean.
+- [ ] Player leaves mid-round: Player 2 clicks Leave during the round. Player 1 immediately sees the end screen with "FINAL SCORES (Round ended early: not enough players)" and a disabled Play Again with "Not enough players".
+- [ ] Host leaves mid-round with 3 players (tick Player 3 in Multiplayer Play Mode): the other two keep playing, the timer does not jump, power-ups stay and keep spawning, the round ends normally.
+- [ ] Late join: while two players are in a match, Player 3 connects. The room is not in the list.
+- [ ] Mutual kill: both players at 25 HP fire at each other at the same moment. Both die, both get 1 K and 1 D, scoreboards agree.
+- [ ] Final frame: keep shooting as the timer hits 0:00. No kill registers after the end screen appears.
+- [ ] Die with 2 s left: the respawn countdown disappears when the end screen shows.
+- [ ] Disconnect: during a match, turn Wi-Fi off for 15 s. The game returns to the menu with "Lost connection during the match". Turn Wi-Fi on and Connect works again.
+- [ ] Resolution: in the Game view dropdown try Full HD (1920x1080), 16:9 Aspect, and Free Aspect with a small window. Nothing overlaps or goes off-screen in the menu, HUD or end screen.
+- [ ] Console: no red errors and no yellow warnings from our scripts during all of the above.

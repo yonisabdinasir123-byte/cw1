@@ -32,7 +32,12 @@ public class EndScreenUI : MonoBehaviour
     private void Start()
     {
         panel.SetActive(false);
-        leaveButton.onClick.AddListener(() => GameManager.Instance.LeaveGame());
+        leaveButton.onClick.AddListener(() =>
+        {
+            leaveButton.interactable = false;
+            playAgainButton.interactable = false;
+            GameManager.Instance.LeaveGame();
+        });
         playAgainButton.onClick.AddListener(() =>
         {
             PlayAgainController.Instance.VoteReady();
@@ -100,7 +105,8 @@ public class EndScreenUI : MonoBehaviour
         }
         resultText.color = result.LocalPlayerIsWinner ? new Color(0.4f, 1f, 0.5f) : new Color(1f, 0.5f, 0.45f);
 
-        finalScoreText.text = ScoreboardUI.BuildScoreboardText("FINAL SCORES");
+        string title = string.IsNullOrEmpty(result.EndReason) ? "FINAL SCORES" : "FINAL SCORES (" + result.EndReason + ")";
+        finalScoreText.text = ScoreboardUI.BuildScoreboardText(title);
         panel.SetActive(true);
         RefreshPlayAgain();
         AudioManager.Play(SoundId.RoundEnd);

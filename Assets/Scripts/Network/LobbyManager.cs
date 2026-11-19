@@ -22,6 +22,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     /// <summary>Minimum players before the master client may start a match.</summary>
     public const int MinPlayersToStart = 2;
 
+    /// <summary>Set when a disconnect happens during a match, so the menu can explain why we are back.</summary>
+    public static string LastDisconnectMessage;
+
     private void Start()
     {
         // The master client loads the Game scene; every other client follows automatically.
@@ -36,11 +39,14 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
         if (!PhotonNetwork.IsConnected)
         {
-            ui.SetStatus("Enter a nickname and press Connect");
+            ui.SetBusy(false);
+            ui.SetStatus(string.IsNullOrEmpty(LastDisconnectMessage) ? "Enter a nickname and press Connect" : LastDisconnectMessage);
+            LastDisconnectMessage = null;
             return;
         }
 
         // We came back from a match. Photon returns us to the master server, then we rejoin the lobby.
+        ui.SetBusy(true);
         ui.SetStatus("Returning to the lobby...");
         if (PhotonNetwork.NetworkClientState == ClientState.ConnectedToMasterServer)
         {
@@ -59,11 +65,13 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             nickname = "Player" + Random.Range(100, 999);
         }
         PhotonNetwork.NickName = nickname;
+        ui.SetBusy(true);
 
         if (PhotonNetwork.IsConnected)
         {
             if (PhotonNetwork.InLobby)
             {
+                ui.SetBusy(false);
                 ui.ShowLobbyPanel();
             }
             else if (PhotonNetwork.NetworkClientState == ClientState.ConnectedToMasterServer)
@@ -94,6 +102,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             IsOpen = true
         };
 
+        ui.SetBusy(true);
         ui.SetStatus("Creating room " + roomName + "...");
         PhotonNetwork.CreateRoom(roomName, options);
     }
@@ -101,6 +110,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     /// <summary>Joins a room picked from the list.</summary>
     public void JoinRoom(string roomName)
     {
+        ui.SetBusy(true);
         ui.SetStatus("Joining " + roomName + "...");
         PhotonNetwork.JoinRoom(roomName);
     }
@@ -108,6 +118,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     /// <summary>Joins any open room, or creates one if none exists.</summary>
     public void QuickPlay()
     {
+        ui.SetBusy(true);
         ui.SetStatus("Looking for a room...");
         RoomOptions options = new RoomOptions { MaxPlayers = (byte)NetworkKeys.MaxPlayersPerRoom };
         PhotonNetwork.JoinRandomOrCreateRoom(roomOptions: options);
@@ -116,6 +127,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     /// <summary>Leaves the current room. Photon then returns us to the master server and the lobby.</summary>
     public void LeaveRoom()
     {
+        ui.SetBusy(true);
         ui.SetStatus("Leaving room...");
         PhotonNetwork.LeaveRoom();
     }
@@ -137,6 +149,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             return;
         }
 
+        // Stay busy: the scene is about to change, and a second click would load it twice.
+        ui.SetBusy(true);
+        ui.SetStatus("Starting...");
         PhotonNetwork.CurrentRoom.IsOpen = false;
         PhotonNetwork.CurrentRoom.IsVisible = false;
         PhotonNetwork.LoadLevel(NetworkKeys.GameScene);
@@ -165,6 +180,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         cachedRooms.Clear();
         ui.RefreshRoomList(cachedRooms.Values);
+        ui.SetBusy(false);
         ui.ShowLobbyPanel();
         ui.SetStatus("In lobby as " + PhotonNetwork.NickName);
     }
@@ -193,6 +209,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         Hashtable startingScore = new Hashtable { { NetworkKeys.Kills, 0 }, { NetworkKeys.Deaths, 0 }, { NetworkKeys.Ready, false } };
         PhotonNetwork.LocalPlayer.SetCustomProperties(startingScore);
 
+        ui.SetBusy(false);
         ui.ShowRoomPanel();
         ui.RefreshPlayerList();
         ui.SetStatus("In room " + PhotonNetwork.CurrentRoom.Name);
@@ -200,16 +217,19 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     public override void OnCreateRoomFailed(short returnCode, string message)
     {
+        ui.SetBusy(false);
         ui.SetStatus("Could not create room: " + message);
     }
 
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
+        ui.SetBusy(false);
         ui.SetStatus("Could not join room: " + message);
     }
 
     public override void OnJoinRandomFailed(short returnCode, string message)
     {
+        ui.SetBusy(false);
         ui.SetStatus("No room found: " + message);
     }
 
@@ -241,6 +261,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public override void OnDisconnected(DisconnectCause cause)
     {
         cachedRooms.Clear();
+        ui.SetBusy(false);
         ui.ShowConnectPanel();
         ui.SetStatus("Disconnected: " + cause + ". Press Connect to try again.");
     }

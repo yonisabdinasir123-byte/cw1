@@ -29,6 +29,22 @@ public class KillFeedUI : MonoBehaviour
         KillTracker.KillAnnounced -= HandleKill;
     }
 
+    private void Start()
+    {
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.RoundStarted += lines.Clear;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.RoundStarted -= lines.Clear;
+        }
+    }
+
     private void HandleKill(string killer, string victim)
     {
         lines.Add((killer + " eliminated " + victim, Time.time + lineLifetime));
