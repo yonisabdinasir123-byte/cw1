@@ -28,6 +28,8 @@ public void RpcRequestPickup(int playerViewId)
     PhotonNetwork.Destroy(gameObject);
 }
 ```
+*Source: `Assets/Scripts/Combat/PowerUp.cs`, lines 55 to 79.*
+
 [SCREENSHOT: both clients side by side, one player inside the purple shield bubble, the HUD label "Shield 5s" above its health bar, and a yellow Rapid Fire cube spinning nearby.]
 
 ## 2. Kill feed
@@ -47,6 +49,8 @@ public void RpcAnnounceKill(string killerName, string victimName)
     KillAnnounced?.Invoke(killerName, victimName);   // KillFeedUI listens to this event
 }
 ```
+*Source: `Assets/Scripts/Network/KillTracker.cs`, lines 78 to 89.*
+
 [SCREENSHOT: top-right of both windows showing the same two kill feed lines under the scoreboard.]
 
 ## 3. Dash with cooldown UI
@@ -65,6 +69,8 @@ private void StartDash()
     photonView.RPC(nameof(RpcDashEffect), RpcTarget.Others);
 }
 ```
+*Source: `Assets/Scripts/Player/PlayerMovement.cs`, lines 133 to 140.*
+
 [SCREENSHOT: one player mid-dash with the blue trail visible in BOTH windows, and the half-filled DASH bar in the dasher's HUD.]
 
 ## 4. Hit and death feedback with synthesised audio
@@ -84,4 +90,28 @@ private void Die(int killerActorNumber)
     PhotonNetwork.Destroy(gameObject);
 }
 ```
+*Source: `Assets/Scripts/Player/PlayerHealth.cs`, lines 103 to 116.*
+
 [SCREENSHOT: the red death burst and orange hit sparks in one window, the red damage flash at the screen edges in the other.]
+
+---
+
+## Screenshot guide (delete this section before exporting to PDF)
+
+**Game screenshots** (the four [SCREENSHOT] lines above)
+1. In Unity, set both Game views to **Full HD (1920x1080)** and play a match with Player 2.
+2. Pause at the right moment with the **pause** button, so effects stay on screen.
+3. Press **Cmd+Shift+4**, then press **Space** and click a window to capture just that window. For a side-by-side shot, press **Cmd+Shift+4** and drag a box around both windows. Screenshots save to the Desktop.
+4. Tips for each shot:
+   - **Power-ups:** wait about 8 s for a cube, pick up the purple Shield, then pause while the bubble shows in both windows.
+   - **Kill feed:** get two quick kills, then pause within 5 s, before the lines fade.
+   - **Dash:** press Shift and click pause straight away, so the trail is still visible.
+   - **Effects:** pause just after a kill to catch the red burst. Take the damage-flash shot from the victim's window right after a hit.
+
+**Code screenshots** (optional, if you want code as images rather than text)
+1. Open VS Code with **File > Open Folder > Documents/GitHub/cw1**.
+2. **Cmd+P** and type the file name from the *Source* line, then **Ctrl+G** and type the first line number.
+3. Select the lines listed, press **Cmd and +** to zoom, and screenshot with **Cmd+Shift+4** by dragging a box around them.
+
+**Inserting the images**
+Put the images in `docs/images/` and replace each [SCREENSHOT: ...] line with, for example, `![Shield power-up on both clients](images/powerup.png)`. Or paste the text into Word, insert the images there, and export to PDF.

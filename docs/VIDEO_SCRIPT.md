@@ -4,7 +4,37 @@
 - Make a Mac build: File > Build Profiles > Build, into a `Builds` folder. Put the build window on the left and the Editor on the right. Press Play in the Editor. If the two cannot see each other's rooms, set Fixed Region to `eu` in PhotonServerSettings and build again.
 - Use the nicknames `Alice` (build) and `Bob` (Editor). The round length is 60 s.
 - Record the gameplay and the code separately (for example with QuickTime > New Screen Recording), then cut them together. Speak slowly. Each row below is about 20 to 40 seconds.
-- Have VS Code open with these files in tabs: LobbyManager, PlayerMovement, Projectile, PlayerHealth, KillTracker, RoundManager, PlayAgainController, PowerUp.
+- Have VS Code open with these files in tabs: LobbyManager, PlayerMovement, Projectile, PlayerHealth, KillTracker, RoundManager, PlayAgainController, PowerUp, PowerUpSpawner.
+
+## Showing the code (VS Code)
+
+Explain the code in **VS Code**, not on the GitHub website: it is clearer on camera and lets you jump straight to a method.
+
+1. VS Code > **File > Open Folder** > `Documents/GitHub/cw1`.
+2. Press **Cmd and +** two or three times so the code is readable in the recording.
+3. **Cmd+P** opens a file by name (type `RoundManager`). **Cmd+Shift+O** jumps to a method by name. **Ctrl+G** jumps to a line number.
+4. Open every file below as a tab before recording, so you only click between tabs.
+5. Select the key lines with the mouse while you talk about them, so viewers can see what you mean.
+6. Practise each method out loud first: what it does, and why only one client does it. `docs/LEARNING.md` has the explanation for every script.
+
+All files are in `Assets/Scripts/`. Line numbers shift if a file is edited, but Cmd+Shift+O always finds the method.
+
+| Video time | File | Method | Line | Point at this |
+|---|---|---|---|---|
+| 1:05 | Network/LobbyManager.cs | `OnRoomListUpdate` | 189 | The `cachedRooms` dictionary, and how removed rooms are deleted from it |
+| 1:05 | Network/LobbyManager.cs | `StartGame` | 139 | The master and 2+ player check, `IsOpen = false`, and `LoadLevel` |
+| 2:30 | Player/PlayerMovement.cs | `Update` | 68 | `photonView.IsMine`, `Normalize()`, and `FacingDirection` |
+| 2:30 | Combat/Projectile.cs | `OnTriggerEnter` | 51 | `photonView.IsMine` and the RPC sent only to `victim.photonView.Owner` |
+| 2:30 | Player/PlayerHealth.cs | `TakeDamage` | 48 | `[PunRPC]`, health reduced, `Die` called at 0 |
+| 2:30 | Network/KillTracker.cs | `RpcReportKill` | 49 | The master-only check and `SetCustomProperties` for kills |
+| 3:45 | Combat/PowerUp.cs | `OnTriggerEnter`, `RpcRequestPickup` | 55, 70 | The request goes to `MasterClient`, and the `awarded` flag means the first request wins |
+| 3:45 | Game/PowerUpSpawner.cs | `AwardPowerUp` | 99 | The RPC sent to `All` |
+| 4:35 | Game/RoundManager.cs | `StartRound` | 68 | `PhotonNetwork.Time` stored in the room properties |
+| 4:35 | Game/RoundManager.cs | `Update` | 88 | Remaining time calculated, and only the master ends the round |
+| 4:35 | Game/RoundManager.cs | `EndRound` | 133 | Players sorted by kills then deaths, ties become a draw |
+| 5:05 | Game/PlayAgainController.cs | `EvaluateVotes`, `RestartRound` | 121, 138 | The `>= 2` players check, and every player has voted |
+
+## Script
 
 | Time | On screen | Voice-over script | Criteria proven |
 |---|---|---|---|
