@@ -386,6 +386,10 @@ sequenceDiagram
     B->>P: PhotonNetwork.Destroy(player B)
     Note over B: 3 s countdown
     B->>P: Instantiate Player (respawn)
+    A->>P: InstantiateRoomObject PowerUp (master)
+    Note over B: B touches the power-up
+    B->>P: RPC RpcRequestPickup -> master
+    A->>P: RPC RpcApplyPowerUp -> All, Destroy PowerUp
     Note over A: Timer reaches 0 (master only acts)
     A->>P: Room props: st = Ended, w = [A], wn = "A"
     P-->>A: OnRoomPropertiesUpdate -> end screen "You Won!"
