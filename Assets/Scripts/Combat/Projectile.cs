@@ -64,6 +64,9 @@ public class Projectile : MonoBehaviourPun
                 return;
             }
 
+            // Every client sees the impact locally; no message needed.
+            Effects.Play(NetworkKeys.HitEffectPrefab, transform.position);
+
             if (photonView.IsMine)
             {
                 // Address the RPC to the victim's owner only: that client is the authority on its health.
@@ -79,6 +82,7 @@ public class Projectile : MonoBehaviourPun
 
         if (other.CompareTag(GameTags.ArenaTag))
         {
+            Effects.Play(NetworkKeys.HitEffectPrefab, transform.position);
             if (photonView.IsMine)
             {
                 Finish();

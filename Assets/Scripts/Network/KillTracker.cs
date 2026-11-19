@@ -14,6 +14,9 @@ public class KillTracker : MonoBehaviourPunCallbacks
 {
     public static KillTracker Instance { get; private set; }
 
+    /// <summary>Fired on every client when the master announces a kill: (killer name, victim name).</summary>
+    public static event System.Action<string, string> KillAnnounced;
+
     // The master client's own copy of the scores. It is the source of truth while this client is
     // master, because custom property updates only reach the local cache after a server round trip.
     private readonly Dictionary<int, int> killsByActor = new Dictionary<int, int>();
@@ -71,6 +74,18 @@ public class KillTracker : MonoBehaviourPunCallbacks
             deathsByActor[victimActorNumber] = GetLocal(deathsByActor, victimActorNumber) + 1;
             victim.SetCustomProperties(new Hashtable { { NetworkKeys.Deaths, deathsByActor[victimActorNumber] } });
         }
+
+        // Kill feed: the master is the one place that knows a kill was accepted, so it announces it.
+        string killerName = killer != null ? killer.NickName : "Someone";
+        string victimName = victim != null ? victim.NickName : "someone";
+        photonView.RPC(nameof(RpcAnnounceKill), RpcTarget.All, killerName, victimName);
+    }
+
+    /// <summary>RPC on all clients: feeds the kill feed UI.</summary>
+    [PunRPC]
+    public void RpcAnnounceKill(string killerName, string victimName)
+    {
+        KillAnnounced?.Invoke(killerName, victimName);
     }
 
     /// <summary>Resets every player's score to zero. Master client only. Used by Play Again.</summary>

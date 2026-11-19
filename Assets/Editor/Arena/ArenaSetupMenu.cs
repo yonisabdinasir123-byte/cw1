@@ -42,6 +42,9 @@ public static class ArenaSetupMenu
 
         if (Resources.Load<GameObject>(NetworkKeys.PlayerPrefab) == null) problems.Add("Player prefab missing from Resources");
         if (Resources.Load<GameObject>(NetworkKeys.ProjectilePrefab) == null) problems.Add("Projectile prefab missing from Resources");
+        if (Resources.Load<GameObject>(NetworkKeys.PowerUpPrefab) == null) problems.Add("PowerUp prefab missing from Resources");
+        if (Resources.Load<GameObject>(NetworkKeys.HitEffectPrefab) == null) problems.Add("HitEffect prefab missing from Resources");
+        if (Resources.Load<GameObject>(NetworkKeys.DeathEffectPrefab) == null) problems.Add("DeathEffect prefab missing from Resources");
 
         foreach (string layer in new[] { GameTags.PlayerLayer, GameTags.ProjectileLayer, GameTags.ArenaLayer })
         {

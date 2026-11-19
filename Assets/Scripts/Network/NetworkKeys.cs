@@ -40,6 +40,12 @@ public static class NetworkKeys
 
     public const string PlayerPrefab = "Player";
     public const string ProjectilePrefab = "Projectile";
+    public const string PowerUpPrefab = "PowerUp";
+
+    // ---- Local-only effect prefabs, also in Resources but never networked ----
+
+    public const string HitEffectPrefab = "HitEffect";
+    public const string DeathEffectPrefab = "DeathEffect";
 
     // ---- Scenes. Must be listed in Build Settings. ----
 

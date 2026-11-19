@@ -239,6 +239,51 @@ UI reads, never writes. `ScoreboardUI` redraws on `OnPlayerPropertiesUpdate`, jo
 event, so it survives the player being destroyed and recreated. `CameraFollow` does the same for
 the camera. `PlayerNameTag` displays `photonView.Owner.NickName`.
 
+## Phase 5 customisations
+
+### Power-ups: PowerUp, PowerUpSpawner, PlayerPowerUps
+What: Speed Boost (1.7x move speed, 8 s), Rapid Fire (3x fire rate, 8 s) and Shield (absorbs all
+damage, 6 s) appear in the arena every 8 seconds, two at most.
+How it is networked (three steps, each with one authority):
+1. **Spawn**: `PowerUpSpawner.Update` runs only on the master. It calls `PhotonNetwork.Instantiate`
+   with the type as instantiation data, so every client creates the same coloured pick-up.
+2. **Request**: `PowerUp.OnTriggerEnter` fires on every client, but only the client that owns the
+   touching player (`player.photonView.IsMine`) sends `RpcRequestPickup` to the master.
+3. **Award**: the master checks an `awarded` flag (first request wins), calls
+   `PowerUpSpawner.AwardPowerUp`, which sends `RpcApplyPowerUp(playerViewId, type)` to all, then
+   destroys the pick-up. The RPC is sent from the spawner's long-lived PhotonView, not the pick-up's,
+   because the pick-up is being destroyed in the same frame.
+`PlayerPowerUps.Apply` runs on all clients so the shield bubble is visible to everyone; the gameplay
+numbers are read by `PlayerMovement`, `PlayerShooting` and `PlayerHealth` on the owner, where input
+and damage are decided. On a Play Again restart the master destroys every remaining pick-up.
+Questions:
+- *Why not let the toucher just apply the power-up itself?* Two players can touch the same pick-up
+  in the same frame. Routing through the master gives one decision.
+- *Why send the award from the spawner's view?* An RPC on a view that is destroyed immediately
+  afterwards can be dropped on clients where the destroy arrives first. The spawner never goes away.
+
+### Kill feed: KillTracker.RpcAnnounceKill, KillFeedUI
+After the master accepts a kill it sends `RpcAnnounceKill(killerName, victimName)` to all clients.
+`KillFeedUI` listens to the static `KillAnnounced` event, shows up to five lines and drops each after
+five seconds. The master is the right sender because it is the only place that knows the kill
+counted (a kill after the round ended is rejected there and so never appears in the feed).
+
+### Dash: PlayerMovement
+Left Shift dashes in the facing direction at 30 units per second for 0.15 s, with a 3 s cooldown
+drawn as a bar in the HUD. The dash itself needs no message: it is just a short burst of velocity
+on the owner and `PhotonTransformView` carries the resulting position like any other move. Only
+the cosmetic part, the trail and whoosh, is sent as `RpcDashEffect` to the other clients.
+Question: *Why is the dash RPC sent to Others and not All?* The owner has already played the trail
+locally in `StartDash`; sending to All would play it twice.
+
+### Effects and audio: Effects, SoundBank, AudioManager, RpcDeathEffect
+Hit sparks play wherever a projectile's trigger fires, on every client, with no message, because
+each client already simulates the projectile. The death explosion is different: only the victim's
+client knows it died, so it sends `RpcDeathEffect(position)` to all right before destroying itself.
+All sounds are synthesised in `SoundBank` at start-up (sweeps, noise bursts, short arpeggios), so no
+audio files are needed and the submission stays small. A red screen flash plays on the owner when
+their health drops.
+
 ## Network reference tables
 
 ### RPCs
@@ -247,6 +292,11 @@ the camera. `PlayerNameTag` displays `photonView.Owner.NickName`.
 |---|---|---|---|---|---|
 | `TakeDamage` | PlayerHealth | Projectile owner | Victim's owner only | damage, attacker actor number | Apply damage once |
 | `RpcReportKill` | KillTracker | Victim's client | MasterClient | killer actor, victim actor | Increment scores (ignored after the round ends) |
+| `RpcAnnounceKill` | KillTracker | Master client | All | killer name, victim name | Kill feed line |
+| `RpcRequestPickup` | PowerUp | Toucher's owner client | MasterClient | player view ID | Ask to be awarded the pick-up |
+| `RpcApplyPowerUp` | PowerUpSpawner | Master client | All | player view ID, type | Apply the effect on every copy of that player |
+| `RpcDashEffect` | PlayerMovement | Dashing owner | Others | none | Trail and sound on remote copies |
+| `RpcDeathEffect` | PlayerHealth | Dying owner | All | position | Explosion effect everywhere |
 
 ### Custom properties
 

@@ -61,6 +61,35 @@ public static class ArenaEditorUtil
         return material;
     }
 
+    /// <summary>Creates or updates an unlit, alpha-blended material (used for trails, shields and particles).</summary>
+    public static Material CreateUnlitMaterial(string name, Color color)
+    {
+        EnsureFolder(MaterialsFolder);
+        string path = MaterialsFolder + "/" + name + ".mat";
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (material == null)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+            material = new Material(shader);
+            AssetDatabase.CreateAsset(material, path);
+        }
+        if (material.HasProperty("_Surface")) material.SetFloat("_Surface", 1f); // transparent
+        if (material.HasProperty("_Blend")) material.SetFloat("_Blend", 0f);     // alpha
+        if (material.HasProperty("_SrcBlend")) material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        if (material.HasProperty("_DstBlend")) material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        if (material.HasProperty("_ZWrite")) material.SetFloat("_ZWrite", 0f);
+        material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+        if (material.HasProperty("_Color")) material.SetColor("_Color", color);
+        EditorUtility.SetDirty(material);
+        return material;
+    }
+
     /// <summary>Adds the tags and layers from GameTags to the project if they are missing.</summary>
     public static void EnsureTagsAndLayers()
     {

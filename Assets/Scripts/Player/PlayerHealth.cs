@@ -23,9 +23,12 @@ public class PlayerHealth : MonoBehaviourPun, IPunObservable
     public int MaxHealth => maxHealth;
     public bool IsDead { get; private set; }
 
+    private PlayerPowerUps powerUps;
+
     private void Awake()
     {
         CurrentHealth = maxHealth;
+        powerUps = GetComponent<PlayerPowerUps>();
     }
 
     private void Start()
@@ -55,8 +58,16 @@ public class PlayerHealth : MonoBehaviourPun, IPunObservable
             return;
         }
 
+        // An active shield absorbs the hit completely.
+        if (powerUps != null && powerUps.HasShield)
+        {
+            AudioManager.Play(SoundId.Hit, 0.4f);
+            return;
+        }
+
         CurrentHealth = Mathf.Max(0, CurrentHealth - amount);
         HealthChanged?.Invoke(CurrentHealth, maxHealth);
+        AudioManager.Play(SoundId.Hit, 0.8f);
 
         if (CurrentHealth == 0)
         {
@@ -82,6 +93,13 @@ public class PlayerHealth : MonoBehaviourPun, IPunObservable
         }
     }
 
+    /// <summary>RPC on all clients: particle burst and sound at the death position.</summary>
+    [PunRPC]
+    public void RpcDeathEffect(Vector3 position)
+    {
+        Effects.Play(NetworkKeys.DeathEffectPrefab, position + Vector3.up);
+    }
+
     private void Die(int killerActorNumber)
     {
         IsDead = true;
@@ -89,6 +107,9 @@ public class PlayerHealth : MonoBehaviourPun, IPunObservable
         // The victim is the one client that knows for certain it died, so it reports the kill.
         KillTracker.Instance.ReportKill(killerActorNumber, photonView.OwnerActorNr);
         GameManager.Instance.HandleLocalPlayerDied();
+
+        // Everyone plays the explosion where this player stood. Sent before the destroy so it arrives first.
+        photonView.RPC(nameof(RpcDeathEffect), RpcTarget.All, transform.position);
 
         // Destroying through Photon removes the object on every client.
         PhotonNetwork.Destroy(gameObject);

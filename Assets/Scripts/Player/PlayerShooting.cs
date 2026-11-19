@@ -22,11 +22,13 @@ public class PlayerShooting : MonoBehaviourPun
     public bool InputEnabled { get; set; } = true;
 
     private PlayerMovement movement;
+    private PlayerPowerUps powerUps;
     private float nextFireTime;
 
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();
+        powerUps = GetComponent<PlayerPowerUps>();
     }
 
     private void Update()
@@ -46,7 +48,9 @@ public class PlayerShooting : MonoBehaviourPun
     /// <summary>Spawns one projectile across the network, travelling in the facing direction.</summary>
     private void Fire()
     {
-        nextFireTime = Time.time + fireCooldown;
+        float multiplier = powerUps != null ? powerUps.FireCooldownMultiplier : 1f;
+        nextFireTime = Time.time + fireCooldown * multiplier;
+        AudioManager.Play(SoundId.Shoot, 0.5f);
 
         Vector3 direction = movement.FacingDirection;
         Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);

@@ -78,3 +78,19 @@ Setup: Fetch and Pull, open Unity, wait for compile, **Tools > Arena > 3. Build 
 - [ ] Single-player case: on the end screen, Player 2 clicks Leave. Player 1's Play Again greys out with "Not enough players to play again". Leave still works.
 - [ ] Host-leaves case: on the end screen, Player 2 votes first, then Player 1 (host) clicks Leave. Player 2's screen updates to "Not enough players"; no errors.
 - [ ] Console has no red errors through all of the above.
+
+## Phase 5: customisations
+
+Setup: Fetch and Pull, open Unity, wait for compile, then **Tools > Arena > 2. Build Prefabs** and **3. Build Game Scene** (or 1. Run All Steps). Set Round Duration to 30 if you want. Commit and push.
+
+- [ ] Shift dashes the player forward with a blue trail; the other window sees the trail too. The DASH bar refills over 3 s.
+- [ ] About 8 s into the round a spinning cube appears (cyan, yellow or purple). Both windows see it in the same place.
+- [ ] Walk into it: it vanishes for both, a pick-up sound plays for the collector, and the label above the health bar shows its name and countdown.
+- [ ] Speed Boost: visibly faster. Rapid Fire: Space fires much faster. Shield: a purple bubble shows in BOTH windows and hits do no damage for 6 s.
+- [ ] Two power-ups max in the arena at once; a new one appears after one is taken.
+- [ ] Shooting a wall or a player shows an orange spark on both screens. Taking damage flashes the screen red and plays a hit sound.
+- [ ] Death shows a red burst on both screens and a line "A eliminated B" top-right on both, which fades after 5 s.
+- [ ] Firing plays a shot sound; the end screen plays a short jingle.
+- [ ] Play Again: leftover power-ups disappear and spawning starts again.
+- [ ] Host leaves mid-round: power-ups keep spawning for the remaining player (the new master).
+- [ ] Console has no red errors.

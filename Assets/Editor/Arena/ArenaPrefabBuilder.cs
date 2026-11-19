@@ -17,6 +17,9 @@ public static class ArenaPrefabBuilder
         ArenaEditorUtil.EnsureFolder(ArenaEditorUtil.ResourcesFolder);
         BuildPlayerPrefab();
         BuildProjectilePrefab();
+        BuildPowerUpPrefab();
+        BuildEffectPrefab(NetworkKeys.HitEffectPrefab, new Color(1f, 0.6f, 0.15f), 14, 0.2f, 5f, 0.35f);
+        BuildEffectPrefab(NetworkKeys.DeathEffectPrefab, new Color(1f, 0.25f, 0.2f), 60, 0.45f, 9f, 0.9f);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("Arena: Player and Projectile prefabs built in " + ArenaEditorUtil.ResourcesFolder);
@@ -87,13 +90,41 @@ public static class ArenaPrefabBuilder
         transformView.m_SynchronizeRotation = true;
         transformView.m_SynchronizeScale = false;
 
+        // Shield bubble, hidden until a shield power-up is active.
+        Material shieldMaterial = ArenaEditorUtil.CreateUnlitMaterial("Shield", new Color(0.6f, 0.5f, 1f, 0.35f));
+        GameObject shield = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        shield.name = "ShieldVisual";
+        shield.transform.SetParent(root.transform, false);
+        shield.transform.localPosition = new Vector3(0f, 1f, 0f);
+        shield.transform.localScale = Vector3.one * 2.4f;
+        shield.layer = root.layer;
+        Object.DestroyImmediate(shield.GetComponent<Collider>());
+        shield.GetComponent<Renderer>().sharedMaterial = shieldMaterial;
+        shield.SetActive(false);
+
+        // Dash trail.
+        Material trailMaterial = ArenaEditorUtil.CreateUnlitMaterial("DashTrail", new Color(0.4f, 0.9f, 1f, 0.8f));
+        GameObject trailObject = new GameObject("DashTrail");
+        trailObject.transform.SetParent(root.transform, false);
+        trailObject.transform.localPosition = new Vector3(0f, 1f, 0f);
+        TrailRenderer trail = trailObject.AddComponent<TrailRenderer>();
+        trail.sharedMaterial = trailMaterial;
+        trail.time = 0.25f;
+        trail.startWidth = 0.8f;
+        trail.endWidth = 0.1f;
+        trail.minVertexDistance = 0.05f;
+        trail.emitting = false;
+
         PlayerMovement movement = root.AddComponent<PlayerMovement>();
         PlayerShooting shooting = root.AddComponent<PlayerShooting>();
         PlayerHealth health = root.AddComponent<PlayerHealth>();
         PlayerNameTag nameTag = root.AddComponent<PlayerNameTag>();
+        PlayerPowerUps powerUps = root.AddComponent<PlayerPowerUps>();
 
         ArenaEditorUtil.SetReference(shooting, "muzzle", muzzle.transform);
         ArenaEditorUtil.SetReference(nameTag, "label", textMesh);
+        ArenaEditorUtil.SetReference(movement, "dashTrail", trail);
+        ArenaEditorUtil.SetReference(powerUps, "shieldVisual", shield);
 
         view.ObservedComponents = new List<Component> { transformView, health };
         view.Synchronization = ViewSynchronization.UnreliableOnChange;
@@ -132,6 +163,74 @@ public static class ArenaPrefabBuilder
         root.AddComponent<Projectile>();
 
         SavePrefab(root, NetworkKeys.ProjectilePrefab);
+    }
+
+    private static void BuildPowerUpPrefab()
+    {
+        Material material = ArenaEditorUtil.CreateMaterial("PowerUp", Color.white);
+
+        GameObject root = new GameObject(NetworkKeys.PowerUpPrefab);
+        BoxCollider trigger = root.AddComponent<BoxCollider>();
+        trigger.isTrigger = true;
+        trigger.center = new Vector3(0f, 1f, 0f);
+        trigger.size = new Vector3(1.4f, 2f, 1.4f);
+
+        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        visual.name = "Visual";
+        visual.transform.SetParent(root.transform, false);
+        visual.transform.localPosition = new Vector3(0f, 1f, 0f);
+        visual.transform.localRotation = Quaternion.Euler(45f, 0f, 45f);
+        visual.transform.localScale = Vector3.one * 0.6f;
+        Object.DestroyImmediate(visual.GetComponent<Collider>());
+        visual.GetComponent<Renderer>().sharedMaterial = material;
+
+        PhotonView view = root.AddComponent<PhotonView>();
+        view.ObservedComponents = new List<Component>();
+        view.Synchronization = ViewSynchronization.Off;
+        view.OwnershipTransfer = OwnershipOption.Fixed;
+
+        PowerUp powerUp = root.AddComponent<PowerUp>();
+        ArenaEditorUtil.SetReference(powerUp, "visual", visual.GetComponent<Renderer>());
+
+        SavePrefab(root, NetworkKeys.PowerUpPrefab);
+    }
+
+    /// <summary>A one-shot particle burst that destroys itself when finished. Local only, not networked.</summary>
+    private static void BuildEffectPrefab(string name, Color color, int particleCount, float lifetime, float speed, float size)
+    {
+        Material material = ArenaEditorUtil.CreateUnlitMaterial("Particle", Color.white);
+
+        GameObject root = new GameObject(name);
+        ParticleSystem system = root.AddComponent<ParticleSystem>();
+
+        ParticleSystem.MainModule main = system.main;
+        main.duration = lifetime;
+        main.loop = false;
+        main.playOnAwake = true;
+        main.startLifetime = lifetime;
+        main.startSpeed = speed;
+        main.startSize = size;
+        main.startColor = color;
+        main.gravityModifier = 0.5f;
+        main.stopAction = ParticleSystemStopAction.Destroy;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        ParticleSystem.EmissionModule emission = system.emission;
+        emission.rateOverTime = 0f;
+        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)particleCount) });
+
+        ParticleSystem.ShapeModule shape = system.shape;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.15f;
+
+        ParticleSystem.SizeOverLifetimeModule sizeOverLifetime = system.sizeOverLifetime;
+        sizeOverLifetime.enabled = true;
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0f));
+
+        ParticleSystemRenderer renderer = root.GetComponent<ParticleSystemRenderer>();
+        renderer.sharedMaterial = material;
+
+        SavePrefab(root, name);
     }
 
     private static void SavePrefab(GameObject root, string name)

@@ -103,6 +103,7 @@ public class EndScreenUI : MonoBehaviour
         finalScoreText.text = ScoreboardUI.BuildScoreboardText("FINAL SCORES");
         panel.SetActive(true);
         RefreshPlayAgain();
+        AudioManager.Play(SoundId.RoundEnd);
     }
 
     private void Hide()

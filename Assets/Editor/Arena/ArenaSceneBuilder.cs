@@ -32,8 +32,9 @@ public static class ArenaSceneBuilder
 
         BuildArenaGeometry();
         List<Object> spawnPoints = BuildSpawnPoints();
+        List<Object> powerUpPoints = BuildPowerUpPoints();
         BuildCamera();
-        BuildManagers(spawnPoints);
+        BuildManagers(spawnPoints, powerUpPoints);
         BuildHud();
 
         string path = ArenaEditorUtil.ScenesFolder + "/" + NetworkKeys.GameScene + ".unity";
@@ -116,6 +117,28 @@ public static class ArenaSceneBuilder
         return points;
     }
 
+    private static List<Object> BuildPowerUpPoints()
+    {
+        GameObject parent = new GameObject("PowerUpPoints");
+        Vector3[] positions =
+        {
+            new Vector3(0f, 0f, 0f),
+            new Vector3(0f, 0f, 12f),
+            new Vector3(0f, 0f, -12f),
+            new Vector3(12f, 0f, 0f),
+            new Vector3(-12f, 0f, 0f)
+        };
+        List<Object> points = new List<Object>();
+        for (int i = 0; i < positions.Length; i++)
+        {
+            GameObject point = new GameObject("PowerUpPoint" + (i + 1));
+            point.transform.SetParent(parent.transform, false);
+            point.transform.localPosition = positions[i];
+            points.Add(point.transform);
+        }
+        return points;
+    }
+
     private static void BuildCamera()
     {
         Camera camera = Camera.main;
@@ -133,7 +156,7 @@ public static class ArenaSceneBuilder
         }
     }
 
-    private static void BuildManagers(List<Object> spawnPoints)
+    private static void BuildManagers(List<Object> spawnPoints, List<Object> powerUpPoints)
     {
         GameObject managers = new GameObject("GameManager");
         PhotonView view = managers.AddComponent<PhotonView>();
@@ -154,7 +177,9 @@ public static class ArenaSceneBuilder
         managers.AddComponent<KillTracker>();
         managers.AddComponent<RoundManager>();
         managers.AddComponent<PlayAgainController>();
+        PowerUpSpawner spawner = managers.AddComponent<PowerUpSpawner>();
         ArenaEditorUtil.SetReferenceArray(gameManager, "spawnPoints", spawnPoints);
+        ArenaEditorUtil.SetReferenceArray(spawner, "spawnPoints", powerUpPoints);
     }
 
     private static void BuildHud()
@@ -187,8 +212,31 @@ public static class ArenaSceneBuilder
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-500f, -60f), new Vector2(500f, 60f));
 
         // Bottom-centre: controls hint.
-        ArenaEditorUtil.CreateText(root, "ControlsHint", "WASD to move   Space or Left Click to fire", 24, TextAnchor.LowerCenter,
+        ArenaEditorUtil.CreateText(root, "ControlsHint", "WASD to move   Space or Left Click to fire   Shift to dash", 24, TextAnchor.LowerCenter,
             new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-500f, 16f), new Vector2(500f, 56f));
+
+        // Full-screen damage flash, drawn first so everything else sits above it. Never blocks clicks.
+        Image damageFlash = ArenaEditorUtil.CreateImage(root, "DamageFlash", new Color(1f, 0f, 0f, 0f),
+            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        damageFlash.raycastTarget = false;
+        damageFlash.transform.SetAsFirstSibling();
+
+        // Bottom-left above health: dash cooldown bar and power-up label.
+        Image dashBackground = ArenaEditorUtil.CreateImage(root, "DashBar", new Color(0.1f, 0.1f, 0.1f, 0.8f),
+            new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(20f, 80f), new Vector2(520f, 104f));
+        Image dashFill = ArenaEditorUtil.CreateImage(dashBackground.transform, "Fill", new Color(0.4f, 0.8f, 1f),
+            Vector2.zero, Vector2.one, new Vector2(3f, 3f), new Vector2(-3f, -3f));
+        ArenaEditorUtil.CreateText(dashBackground.transform, "DashLabel", "DASH (Shift)", 18, TextAnchor.MiddleCenter,
+            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Text powerUpText = ArenaEditorUtil.CreateText(root, "PowerUpText", string.Empty, 30, TextAnchor.MiddleLeft,
+            new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(20f, 112f), new Vector2(520f, 152f));
+
+        // Right side under the scoreboard: kill feed.
+        Text killFeed = ArenaEditorUtil.CreateText(root, "KillFeed", string.Empty, 26, TextAnchor.UpperRight,
+            new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-620f, -460f), new Vector2(-20f, -260f));
+        killFeed.color = new Color(1f, 0.9f, 0.7f);
+        KillFeedUI feed = canvas.gameObject.AddComponent<KillFeedUI>();
+        ArenaEditorUtil.SetReference(feed, "feedText", killFeed);
 
         HudUI hud = canvas.gameObject.AddComponent<HudUI>();
         ArenaEditorUtil.SetReference(hud, "healthFill", healthFill.rectTransform);
@@ -196,6 +244,9 @@ public static class ArenaSceneBuilder
         ArenaEditorUtil.SetReference(hud, "respawnText", respawnText);
         ArenaEditorUtil.SetReference(hud, "roomInfoText", roomInfo);
         ArenaEditorUtil.SetReference(hud, "leaveButton", leaveButton);
+        ArenaEditorUtil.SetReference(hud, "dashFill", dashFill.rectTransform);
+        ArenaEditorUtil.SetReference(hud, "powerUpText", powerUpText);
+        ArenaEditorUtil.SetReference(hud, "damageFlash", damageFlash);
 
         ScoreboardUI scoreboard = canvas.gameObject.AddComponent<ScoreboardUI>();
         ArenaEditorUtil.SetReference(scoreboard, "scoreText", scoreText);
