@@ -65,7 +65,7 @@ Markers reward understanding, so you should be able to explain every sentence if
 "Hi, my name is ______, and this is my multiplayer arena shooter, built in Unity 6 with Photon PUN 2. On the left is a Mac build and on the right is the Unity Editor, so these are two separate clients talking over the internet."
 
 **0:15 How Photon works**
-[Stay on the Connect panel. Optional: VS Code, Cmd+P `PhotonServerSettings` is not code, so instead show it in Unity: Window > Photon Unity Networking > Highlight Server Settings]
+[Optional: in Unity, Window > Photon Unity Networking > Highlight Server Settings, and point at App Id and Fixed Region in the Inspector]
 
 "First, how the networking works. Photon is a cloud relay, so I did not write a server. When I press Connect, ConnectUsingSettings reads my App ID from the Photon Server Settings and contacts Photon's Name Server. That picks the closest region, here Europe, and sends us to that region's Master Server, which holds the lobby and the room list. When we create or join a room, Photon moves us to a Game Server that hosts the room and relays every message between its players.
 
